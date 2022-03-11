@@ -135,7 +135,7 @@ def get_australian_dataloader(batch_size=69):
 
 def get_wine_np():
 	column_names = ["label", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "f13"]
-	df = pd.read_csv("./Wine/wine.data", header=None, names=column_names)
+	df = pd.read_csv("./datasets/Wine/wine.data", header=None, names=column_names)
 	data = df[["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "f13"]]
 	labels = df["label"]
 	data = np.array(data)
