@@ -307,7 +307,7 @@ def get_10x_73k_np(data_points=-1):
 
 	return data, labels
 
-def get_10x_73k(batch_size=64, data_points=-1):
+def get_10x_73k_dataloader(batch_size=64, data_points=-1):
 	data, labels = get_10x_73k_np(data_points=data_points)
 	# Convert to tensor dataset
 	data = torch.Tensor(data)
