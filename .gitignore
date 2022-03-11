@@ -1,2 +1,15 @@
 Thesis/
 *.png
+.ipynb_checkpoints
+datasets/MNIST
+datasets/Wine
+datasets/Iris
+datasets/Olivetti-Faces
+datasets/Pendigits
+datasets/FashionMNIST
+datasets/FashionMNIST_5
+datasets/Synthetic
+datasets/Australian
+datasets/Dermatology
+datasets/Ecoli
+datasets/10x_73k
