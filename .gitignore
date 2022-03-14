@@ -1,6 +1,7 @@
 Thesis/
 *.png
 .ipynb_checkpoints
+Hard-Silhouette-2D-example.ipynb
 datasets/MNIST
 datasets/Wine
 datasets/Iris
