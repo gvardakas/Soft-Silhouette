@@ -407,7 +407,10 @@ def get_even_or_odd_Pendigits_dataloader(batch_size=64, even=True):
 
 def get_MNIST_subset_np(create_subset=False, data_per_pattern=1000):
 	if(create_subset):
-		transform = transforms.Compose([transforms.Resize(IMG_SIZE), transforms.ToTensor()])
+		transform = transforms.Compose([transforms.Resize(IMG_SIZE),
+			transforms.ToTensor(),
+			transforms.Normalize((0.5,), (0.5,))])
+
 		train = datasets.MNIST("./datasets/MNIST", train=True, download=True, transform=transform)
 		trainset = torch.utils.data.DataLoader(train, batch_size=1, shuffle=shuffle)
 		data = []
@@ -435,7 +438,12 @@ def get_MNIST_subset_np(create_subset=False, data_per_pattern=1000):
 	# Load data
 	data = np.load("datasets/MNIST/MNIST_subset/MNIST.npy")
 	labels = np.load("datasets/MNIST/MNIST_subset/MNIST_labels.npy")
-	
+
+	total_size = data.shape[0]
+	random_permutation = np.random.permutation(np.arange(total_size))
+	data = data[random_permutation]
+	labels = labels[random_permutation]
+
 	return data, labels
 
 def get_MNIST_subset_dataloader(batch_size=64, create_subset=False, data_per_pattern=1000):
