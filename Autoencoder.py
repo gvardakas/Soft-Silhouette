@@ -186,8 +186,8 @@ class GenericAutoencoder(nn.Module):
             self.clusters = np.concatenate(self.clusters)
             self.realLabels = np.concatenate(self.realLabels)
             self.latentData = np.concatenate(self.latentData)
-            acc, pur, nmi, ari = self.evaluation.autoencoder_evaluation(self.latentData,self.realLabels.astype(int),self.clusters)
-            print(f"Epoch: {epoch} REC_LOSS: {sumRecLoss:.4f} CL_LOSS: {sumClusteringLoss:.4f} SIL: {sumSoftSilhouette:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}")
+            acc, pur, nmi, ari, sil = self.evaluation.autoencoder_evaluation(self.latentData,self.realLabels.astype(int),self.clusters)
+            print(f"Epoch: {epoch} REC_LOSS: {sumRecLoss:.4f} CL_LOSS: {sumClusteringLoss:.4f} SOFT_SIL: {sil:.4f} SIL: {sumSoftSilhouette:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}")
             self.df.loc[epoch] = [sumRecLoss,sumClusteringLoss,sumSoftSilhouette,acc,pur,nmi,ari]
             
     def setPath(self):
