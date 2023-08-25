@@ -67,16 +67,7 @@ class MLP(nn.Module):
     def forward_softMax(self, x):
         x = x.to(self.device)
         x = self.model(x)
-        #print("Before")
-        #print(x)
-        Tp = 0.01
-        #xn = 1 hot
-        x = softmax(x/Tp, dim=1)
-        for i in range(x.shape[0]):
-            j = torch.argmax(x[i])
-            x[i] = 0
-            x[i][j] = 1
-        #print(x)
+        x = softmax(x, dim=1)
         return x
     
     def takeRealData(self):
@@ -125,7 +116,7 @@ class MLP(nn.Module):
                 self.clusters.append(softClustering)
                 self.realLabels.append(labels.cpu().data.numpy())
 
-                softSil = self.softSilhouette.soft_silhouette(realData, softClustering, requires_distance_grad=False)
+                softSil = self.softSilhouette.soft_silhouette(realData, softClustering, requires_distance_grad=True)
                 
                 total_loss = 1 - softSil
         
@@ -133,9 +124,9 @@ class MLP(nn.Module):
                 
                 sumSoftSilhouette += softSil.item()
                 
-                #optimizer.zero_grad()
-                #total_loss.backward()
-                #optimizer.step()
+                optimizer.zero_grad()
+                total_loss.backward()
+                optimizer.step()
             
            
             
