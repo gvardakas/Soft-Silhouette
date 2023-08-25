@@ -29,8 +29,6 @@ class SoftSilhouette:
         s = torch.mean(torch.sum(torch.mul(soft_clustering, sc), dim=1)).to(self.device)
         return s
     """
-    def hard_silhouette(self,X,soft_clustering):
-        return silhouette_score(X, cluster_labels)
         
     def soft_silhouette(self,X, soft_clustering, requires_distance_grad=False):
         if not requires_distance_grad: X = X.detach()
