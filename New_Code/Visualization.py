@@ -22,7 +22,6 @@ class Visualization:
         # Cluster with TSNE
         tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=300)
         
-        
         cluster_centers = self.model.take_clusters().cpu().detach().numpy()
         if mlp:
             tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers,self.model.realData)))
@@ -31,7 +30,6 @@ class Visualization:
         
         for label_id in unique_labels:
             selected_indexes = np.where(self.model.clusters == label_id)[0]
-            #tsne_embeddings_data = tsne_embeddings[self.model.nClusters:]
             x = tsne_embeddings[self.model.nClusters:][selected_indexes, 0]
             y = tsne_embeddings[self.model.nClusters:][selected_indexes, 1]
             c = [self.color_list[label_id]] * selected_indexes.shape[0]
@@ -39,9 +37,7 @@ class Visualization:
         
         # Plot cluster centers
         plt.scatter(tsne_embeddings[:self.model.nClusters, 0], tsne_embeddings[:self.model.nClusters, 1], c='red', marker='x', s=300, label='Cluster Centers')
-        
-            
-            
+         
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks
 
@@ -56,12 +52,7 @@ class Visualization:
     def plot(self, figxsize=10, figysize=10, mlp=False):
         
         plt.figure(figsize=(figxsize, figysize))
-        #for i in range(self.model.clusters.shape[0]):
-            
-            #print(self.model.clusters[i])
-        print(np.where(self.model.clusters == 0)[0].shape[0])
-        print(np.where(self.model.clusters == 1)[0].shape[0])
-        print(np.where(self.model.clusters == 2)[0].shape[0])
+        
         unique_labels = np.unique(self.model.clusters).astype(int)
         
         # Cluster with TSNE
@@ -82,14 +73,13 @@ class Visualization:
         if mlp:
             cluster_centers = self.model.take_clusters().cpu().detach().numpy()
             # Plot cluster centers
-            #plt.scatter(cluster_centers[:, 1], cluster_centers[:, 0], c='red', marker='x', s=100, label='Cluster Centers')
             plt.scatter(cluster_centers[:, 0], cluster_centers[:, 1], c='red', marker='x', s=300, label='Cluster Centers')
         
         # Remove x-axis numbering and label
-        #plt.xticks([])  # Pass an empty list to remove ticks
+        plt.xticks([])  # Pass an empty list to remove ticks
 
         # Remove y-axis numbering and label
-        #plt.yticks([])  # Pass an empty list to remove ticks
+        plt.yticks([])  # Pass an empty list to remove ticks
 
         plt.tight_layout()
         
