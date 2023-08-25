@@ -18,7 +18,7 @@ import os
 import pdb
 from PIL import Image
 
-SHUFFLE = False 
+SHUFFLE = True 
 
 folder_path = 'C:/Users/PAPASOFT INC/Desktop/SOFT_SIL/datasets/'
 
@@ -679,9 +679,7 @@ def load_R3_dataloader(batch_size=64, option_name=''):
 	data_np, labels_np = load_R3_np()
 	# Convert to tensor dataset
 	data_tr = torch.Tensor(data_np)
-	print(data_tr.shape)
 	data_shape = data_tr.shape[1]
-	print(data_shape)
 	labels_tr = torch.Tensor(labels_np)
 	final_dataset = TensorDataset(data_tr, labels_tr)
 	dataloader = DataLoader(final_dataset, batch_size=batch_size, shuffle=SHUFFLE)
