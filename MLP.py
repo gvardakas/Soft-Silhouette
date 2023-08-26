@@ -27,12 +27,6 @@ class MLP(nn.Module):
         self.inputDim = inputDim
         self.pathToModule = pathToModule
         
-        self.h1AeActive = False
-        self.h2AeActive = False
-        self.h3AeActive = False
-        self.lsAeActive = False
-        self.outAeActive = False
-        
         self.h1MDim = 0
         self.h1MActFunc = ""
         self.h1MActive = False
