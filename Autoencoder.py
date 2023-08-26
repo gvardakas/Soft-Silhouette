@@ -161,7 +161,7 @@ class GenericAutoencoder(nn.Module):
                 code = self.encoder(realData)
                 
                 # Take argmax from softClustering
-                self.clusters.append(self.evaluation.clusters_to_numpy(softClustering))
+                self.clusters.append(softClustering)
                 self.realLabels.append(labels.cpu().data.numpy())
                 self.latentData.append(code.cpu().detach().numpy())
                 
@@ -182,8 +182,8 @@ class GenericAutoencoder(nn.Module):
                 optimizer.step()
             
            
-            
-            self.clusters = np.concatenate(self.clusters)
+            self.clusters = torch.cat(self.clusters, dim=0)
+            self.clusters = self.evaluation.clusters_to_numpy(self.clusters)
             self.realLabels = np.concatenate(self.realLabels)
             self.latentData = np.concatenate(self.latentData)
             acc, pur, nmi, ari, sil = self.evaluation.autoencoder_evaluation(self.latentData,self.realLabels.astype(int),self.clusters)
