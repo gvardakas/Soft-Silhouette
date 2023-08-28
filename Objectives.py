@@ -1,6 +1,9 @@
 import torch
+import torch.nn.functional as F
+from scipy.stats import entropy
 
-class SoftSilhouette:
+class Objectives:
+
 	def __init__(self, device):
 		self.device = device
 
@@ -23,7 +26,28 @@ class SoftSilhouette:
 		sc = torch.div(torch.sub(betas, alphas), torch.max(alphas, betas)).to(self.device)
 		s = torch.mean(torch.sum(torch.mul(soft_clustering, sc), dim=1)).to(self.device)
 		return s
+
+	def entropy(self, probabilities, base=2):
+		"""
+		Compute the entropy of a probability distribution while retaining gradients.
+
+		:param probabilities: A tensor of probabilities (e.g., output of a softmax function).
+		:param base: The logarithmic base for entropy calculation (default is 2 for bits).
+		:return: The entropy of the distribution.
+		"""
+		# Ensure probabilities sum to 1 along the specified dimension (usually dim=1 for a batch of distributions).
+		assert torch.allclose(probabilities.sum(dim=-1), torch.ones_like(probabilities.sum(dim=-1))), "Probabilities do not sum to 1."
+
+		# Apply logarithm with the specified base and compute the entropy.
+		log_probabilities = torch.log(probabilities + 1e-10).to(self.device)  # Add a small epsilon to avoid log(0).
+		entropy_matrix = -torch.sum(probabilities * log_probabilities, dim=-1).to(self.device) / torch.log(torch.tensor(base, dtype=probabilities.dtype)).to(self.device)
+		mean_entropy = torch.mean(entropy_matrix).to(self.device)
+
+		return mean_entropy, entropy_matrix
+
+	# Easy test to implement np.mean(entropy(np.transpose(self.soft_clustering.cpu().detach().numpy()), base=2)) == mean_entropy
 	
+
 	"""
 	# Alphas Optimization Has A Problem TODO
 	def fast_soft_silhouette(self, X, cluster_centers, soft_clustering, requires_distance_grad=False):

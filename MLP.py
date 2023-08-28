@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import entropy
 from sklearn.cluster import KMeans
 
 import torch
@@ -10,19 +9,20 @@ import torch.optim as optim
 
 import os
 
-from SoftSilhouette import SoftSilhouette
+from Objectives import Objectives
 from Visualization import Visualization
 from Evaluations.Evaluation import Evaluator
 
 
 class MLP(nn.Module):
+	
 	def __init__(self, device, n_clusters, input_dim):
 		super(MLP, self).__init__()	
 		self.device = device
 		self.input_dim = input_dim
 		self.n_clusters = n_clusters
 		self.evaluator = Evaluator()
-		self.softSilhouette = SoftSilhouette(self.device)
+		self.objectives = Objectives(self.device)
 
 		self.model = nn.Sequential(
 			nn.Linear(input_dim, n_clusters, bias=False),
@@ -63,7 +63,7 @@ class MLP(nn.Module):
 
 		for weights in self.model[0].parameters():
 			for index, center in enumerate(kmeans.cluster_centers_):
-				with torch.no_grad(): # TODO
+				with torch.no_grad():
 					center = torch.from_numpy(center) 
 					center.requires_grad_()
 					weights.data[index] = center
@@ -87,35 +87,34 @@ class MLP(nn.Module):
 		
 		# Train MLP
 		for epoch in range(self.n_epochs):
-			self.data_list = list()
-			self.clusters_list = list()
-			self.labels_list = list()
-			
 			sum_soft_silhouette = 0
 			sum_clustering_loss = 0
 			sum_entropy = 0
 			total_loss = 0
 
+			self.data_list = list()
+			self.clusters_list = list()
+			self.labels_list = list()
+
 			for batch_index, (data, labels) in enumerate(self.dataloader):
-				data = data.to(self.device)
 				self.soft_clustering = self.forward(data).to(self.device)
 
-				soft_sil = self.softSilhouette.soft_silhouette(data, self.soft_clustering, requires_distance_grad=True)
+				soft_sil = self.objectives.soft_silhouette(data, self.soft_clustering, requires_distance_grad=True)
+				mean_entropy, _ = self.objectives.entropy(self.soft_clustering, base=2)
+
 				clustering_loss = 1 - soft_sil
-				entropy_val = entropy(np.transpose(self.soft_clustering.cpu().detach().numpy()), base=2) 
-				entropy_val = self.entr_lambda * np.mean(entropy_val)
-				total_loss = clustering_loss + entropy_val
+				total_loss = clustering_loss + self.entr_lambda * mean_entropy
 
 				sum_soft_silhouette += soft_sil.item()
 				sum_clustering_loss += clustering_loss.item()
-				sum_entropy += entropy_val
+				sum_entropy += self.entr_lambda * mean_entropy
 
 				optimizer.zero_grad()
 				total_loss.backward()
 				optimizer.step()
 
-				self.data_list.append(data.cpu().detach().numpy())
-				self.labels_list.append(labels.cpu().detach().numpy())
+				self.data_list.append(data)
+				self.labels_list.append(labels)
 				self.clusters_list.append(self.soft_clustering)
 
 			self.clusters_list = torch.cat(self.clusters_list, dim=0)
@@ -125,7 +124,7 @@ class MLP(nn.Module):
 			acc, pur, nmi, ari, sil = self.evaluator.evaluate_model(self.data_list, self.labels_list, self.clusters_list)
 			self.df_eval.loc[epoch] = [sum_clustering_loss, sum_soft_silhouette, acc, pur, nmi, ari]
 
-			print(f'Epoch: {epoch} Cl_loss: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} Soft_sil: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
+			print(f'Epoch: {epoch} Cl Loss: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} Soft Sil: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
 			
 	def set_path(self):
 		self.dest_path = os.path.join(self.dataset_name, '_With_', str(self.n_epochs), '_Eps_out_', str(self.n_clusters), '_bs_', str(self.batch_size), '_lr_', str(self.lr))
