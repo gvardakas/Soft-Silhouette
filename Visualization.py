@@ -24,7 +24,7 @@ class Visualization:
         
         cluster_centers = self.model.take_clusters().cpu().detach().numpy()
         if mlp:
-            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers,self.model.realData)))
+            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers,self.model.data_list)))
         else:
             tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers,self.model.latentData)))
         
@@ -53,25 +53,25 @@ class Visualization:
         
         plt.figure(figsize=(figxsize, figysize))
         
-        unique_labels = np.unique(self.model.clusters).astype(int)
+        unique_labels = np.unique(self.model.clusters_list).astype(int)
         
         # Cluster with TSNE
         if mlp:
             for label_id in unique_labels:
-                selected_indexes = np.where(self.model.clusters == label_id)[0]
-                x = self.model.realData[selected_indexes, 0]
-                y = self.model.realData[selected_indexes, 1]
+                selected_indexes = np.where(self.model.clusters_list == label_id)[0]
+                x = self.model.data_list[selected_indexes, 0]
+                y = self.model.data_list[selected_indexes, 1]
                 c = [self.color_list[label_id]] * selected_indexes.shape[0]
                 plt.scatter(x=x, y=y, c=c, edgecolors='black')
         else:
             for label_id in unique_labels:
-                selected_indexes = np.where(self.model.clusters == label_id)[0]
+                selected_indexes = np.where(self.model.clusters_list == label_id)[0]
                 x = self.model.latentData[selected_indexes, 0]
                 y = self.model.latentData[selected_indexes, 1]
                 c = [self.color_list[label_id]] * selected_indexes.shape[0]
                 plt.scatter(x=x, y=y, c=c, edgecolors='black')
         if mlp:
-            cluster_centers = self.model.take_clusters().cpu().detach().numpy()
+            cluster_centers = self.model.get_clustering_layer_centers().cpu().detach().numpy()
             # Plot cluster centers
             plt.scatter(cluster_centers[:, 0], cluster_centers[:, 1], c='red', marker='x', s=300, label='Cluster Centers')
         
@@ -83,8 +83,8 @@ class Visualization:
 
         plt.tight_layout()
         
-        self.create_directory_if_not_exists(self.model.expDirPath+ "\\No_TSNE")
-        plt.savefig(self.model.expDirPath + "\\No_TSNE\\" + self.model.experimentName+"_No_TSNE.png")
+        #self.create_directory_if_not_exists(self.model.expDirPath+ "\\No_TSNE")
+        #plt.savefig(self.model.expDirPath + "\\No_TSNE\\" + self.model.experimentName+"_No_TSNE.png")
         #plt.show()    
     
     def plot_3D(self, figxsize=10, figysize=10, mlp=False):

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import entropy
 from sklearn.cluster import KMeans
 
 import torch
@@ -30,11 +31,12 @@ class MLP(nn.Module):
 			#nn.BatchNorm1d(n_clusters)
 		)
 
-	def set_training_variables(self, dataloader, batch_size, n_epochs, lr):
+	def set_training_variables(self, dataloader, batch_size, n_epochs, lr, entr_lambda):
 		self.dataloader = dataloader
 		self.batch_size = batch_size
 		self.n_epochs = n_epochs
 		self.lr = lr
+		self.entr_lambda = entr_lambda
 
 	def set_path_variables(self, path_to_module, dataset_name):
 		self.path_to_module = path_to_module
@@ -66,7 +68,7 @@ class MLP(nn.Module):
 					center.requires_grad_()
 					weights.data[index] = center
    
-	def take_clusters(self):
+	def get_clustering_layer_centers(self):
 		for weights in self.model[0].parameters():
 			#for index in range(self.n_clusters):
 				#print(weights.data[index]) 
@@ -91,19 +93,25 @@ class MLP(nn.Module):
 			
 			sum_soft_silhouette = 0
 			sum_clustering_loss = 0
-			
+			sum_entropy = 0
+			total_loss = 0
+
 			for batch_index, (data, labels) in enumerate(self.dataloader):
 				data = data.to(self.device)
 				self.soft_clustering = self.forward(data).to(self.device)
 
 				soft_sil = self.softSilhouette.soft_silhouette(data, self.soft_clustering, requires_distance_grad=True)
 				clustering_loss = 1 - soft_sil
+				entropy_val = entropy(np.transpose(self.soft_clustering.cpu().detach().numpy()), base=2) 
+				entropy_val = self.entr_lambda * np.mean(entropy_val)
+				total_loss = clustering_loss + entropy_val
 
 				sum_soft_silhouette += soft_sil.item()
 				sum_clustering_loss += clustering_loss.item()
-				
+				sum_entropy += entropy_val
+
 				optimizer.zero_grad()
-				clustering_loss.backward()
+				total_loss.backward()
 				optimizer.step()
 
 				self.data_list.append(data.cpu().detach().numpy())
@@ -117,7 +125,7 @@ class MLP(nn.Module):
 			acc, pur, nmi, ari, sil = self.evaluator.evaluate_model(self.data_list, self.labels_list, self.clusters_list)
 			self.df_eval.loc[epoch] = [sum_clustering_loss, sum_soft_silhouette, acc, pur, nmi, ari]
 
-			print(f'Epoch: {epoch} CL_LOSS: {sum_clustering_loss:.4f} SOFT_SIL: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
+			print(f'Epoch: {epoch} Cl_loss: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} Soft_sil: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
 			
 	def set_path(self):
 		self.dest_path = os.path.join(self.dataset_name, '_With_', str(self.n_epochs), '_Eps_out_', str(self.n_clusters), '_bs_', str(self.batch_size), '_lr_', str(self.lr))
