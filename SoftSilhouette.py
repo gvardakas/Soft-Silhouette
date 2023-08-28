@@ -1,4 +1,5 @@
 import torch
+
 class SoftSilhouette:
 	def __init__(self, device):
 		self.device = device

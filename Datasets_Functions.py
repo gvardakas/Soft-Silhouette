@@ -13,19 +13,6 @@ def createHashMap(filePath):
         # If the file doesn't exist, create a new empty hashmap
         hashmap = {}
     
-    # Add or modify key-value pairs
-    #hashmap['10x73k'] = [256, 8, 0, False,'datasets.datasets_New','load_10x73k','']
-    #hashmap['TCGA'] = [256, 5, 0, False,'datasets.datasets_New','load_TCGA','']
-    #hashmap['coil20'] = [256, 20, 0, False,'datasets.datasets_New','load_coil20_dataloader','']
-    #hashmap['MNIST_subset'] = [256, 10, 10000, True, 'datasets.datasets_New', 'load_MNIST_subset_dataloader', '']
-    #hashmap['train_test_MNIST'] = [256, 10, 10000, True, 'datasets.datasets_New', 'load_train_test_MNIST_dataloader', '']
-    #hashmap['MNIST_last35k'] = [256, 10, 0, False,'datasets.datasets_New','load_MNIST_last35k_dataloader','']
-    #hashmap['eMNIST_balanced_letters'] = [256, 37, 0, False,'datasets.datasets_New','load_eMNIST_dataloader','balanced letters']
-    #hashmap['eMNIST_mnist'] = [256, 10, 0, False,'datasets.datasets_New','load_eMNIST_dataloader','mnist']
-    #hashmap['eMNIST_balanced_digits'] = [256, 10, 0, False,'datasets.datasets_New','load_eMNIST_dataloader','balanced digits']
-    #hashmap['train_test_MNIST'] = [256, 10, 10000, True, 'datasets.datasets_New', 'load_train_test_MNIST_dataloader', '']
-    #hashmap['fashionMNIST_subset'] = [256, 20, 0, False,'datasets.datasets_New','load_fashionMNIST_subset_dataloader','']
-    #hashmap['Pendigits'] = [256, 20, 0, False,'datasets.datasets_New','load_Pendigits','']
     # Save the hashmap to the file
     with open(filename, 'wb') as file:
         pickle.dump(hashmap, file)

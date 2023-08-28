@@ -1,157 +1,132 @@
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+
 import torch
 import torch.nn as nn
 from torch.nn.functional import softmax
 import torch.optim as optim
-import numpy as np
-import pandas as pd
-from New_Code_Files.SoftSilhouette import SoftSilhouette
-from sklearn.cluster import KMeans
-from New_Code_Files.Visualization import Visualization
-from New_Code_Files.Evaluation import Evaluation
+
+import os
+
+from SoftSilhouette import SoftSilhouette
+from Visualization import Visualization
+from Evaluations.Evaluation import Evaluator
+
 
 class MLP(nn.Module):
-    def __init__(self, pathToModule, datasetName, device, dataloader, batchSize, trEpochs, trLR, nClusters, negativeSlope, inputDim, kmeans_n_init):
-        super(MLP, self).__init__()
-        self.IMG_SIZE = 28
-        self.datasetName = datasetName
-        self.device = device
-        self.dataloader = dataloader
-        self.batchSize = batchSize
-        self.trEpochs = trEpochs
-        self.trLR = trLR
-        self.kmeans_n_init = kmeans_n_init
-        self.evaluation = Evaluation(kmeans_n_init,'k-means++')
-        self.softSilhouette = SoftSilhouette(self.device)
-        self.nClusters = nClusters
-        self.negativeSlope = negativeSlope
-        self.inputDim = inputDim
-        self.pathToModule = pathToModule
-        
-        self.h1MDim = 0
-        self.h1MActFunc = ""
-        self.h1MActive = False
-        
-        self.h2MDim = 0
-        self.h2MActFunc = ""
-        self.h2MActive = False
-        
-        self.outMActFunc = "L"
-        
-        self.model = nn.Sequential(
-                
-                nn.Linear(inputDim, nClusters, bias=False),
+	def __init__(self, device, n_clusters, input_dim):
+		super(MLP, self).__init__()	
+		self.device = device
+		self.input_dim = input_dim
+		self.n_clusters = n_clusters
+		self.evaluator = Evaluator()
+		self.softSilhouette = SoftSilhouette(self.device)
 
-                #nn.LeakyReLU(negativeSlope, inplace=True),
-                #nn.ReLU(inplace=True),
-                #nn.Sigmoid(),
+		self.model = nn.Sequential(
+			nn.Linear(input_dim, n_clusters, bias=False),
+			#nn.ReLU(inplace=True),
+			#nn.Sigmoid(),
+			#nn.BatchNorm1d(n_clusters)
+		)
 
-                #nn.BatchNorm1d(nClusters)
-            )
-        self.setPath()    
+	def set_training_variables(self, dataloader, batch_size, n_epochs, lr):
+		self.dataloader = dataloader
+		self.batch_size = batch_size
+		self.n_epochs = n_epochs
+		self.lr = lr
 
-    
-    # Here we implement the forward of the data through mlp
-    def forward(self, x):
-        x = x.to(self.device)
-        x = self.model(x)
-        return x
+	def set_path_variables(self, path_to_module, dataset_name):
+		self.path_to_module = path_to_module
+		self.dataset_name = dataset_name
 
+	def forward(self, x):
+		x = x.to(self.device)
+		x = self.model(x)
+		x = softmax(x, dim=1)
+		return x
+	
+	def get_data(self):
+		data_list, labels_list = list(), list()
 
-    # Forward with Soft Max for data x through MLP Model (1st Part) and SoftMax Function (2nd Part)
-    def forward_softMax(self, x):
-        x = x.to(self.device)
-        x = self.model(x)
-        x = softmax(x, dim=1)
-        return x
-    
-    def takeRealData(self):
-        self.realData = list()
-        for batch_index, (realData, labels) in enumerate(self.dataloader):
-            realData = realData.to(self.device)
-            self.realData.append(realData.cpu().data.numpy())
-        self.realData = np.concatenate(self.realData)   
-    
-    def kmeans_initialization(self, n_init=10):
-        self.takeRealData()    
-        self.kmeans = KMeans(n_clusters=self.nClusters, n_init=n_init).fit(self.realData)
-        for weights in self.model[0].parameters():
-            for index, center in enumerate(self.kmeans.cluster_centers_):
-                with torch.no_grad():
-                    center = torch.from_numpy(center) 
-                    center.requires_grad_()
-                    weights.data[index] = center
+		for batch_index, (data, labels) in enumerate(self.dataloader):
+			data_list.append(data)
+			labels_list.append(labels)
+
+		return np.concatenate(data_list), np.concatenate(labels_list).astype(int)
+	
+	def kmeans_initialization(self, n_init=10):
+		data, labels = self.get_data()    
+		kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(data)
+
+		for weights in self.model[0].parameters():
+			for index, center in enumerate(kmeans.cluster_centers_):
+				with torch.no_grad(): # TODO
+					center = torch.from_numpy(center) 
+					center.requires_grad_()
+					weights.data[index] = center
    
-    def take_clusters(self):
-        for weights in self.model[0].parameters():
-            #for index in range(self.nClusters):
-                #print(weights.data[index]) 
-            #print(weights)
-            return weights
-    
-    def train_mlp(self,silhouette_method="fast"):
-        optimizer = optim.Adam(self.parameters(), lr=self.trLR)
-        self.df = pd.DataFrame(columns=['Cl_Loss','Soft_Sil','Accuracy','Purity','Nmi','Ari'])
-        
-        # Train MLP
-        for epoch in range(self.trEpochs):
-            self.realData = list()
-            self.clusters = list()
-            self.realLabels = list()
-            
-            sumSoftSilhouette = 0
-            sumClusteringLoss = 0
-            
-            for batch_index, (realData, labels) in enumerate(self.dataloader):
-                realData = realData.to(self.device)
-                softClustering = self.forward_softMax(realData).to(self.device)
-                self.softClustering = softClustering
-                # Take argmax from softClustering
-                self.realData.append(realData.cpu().data.numpy())
-                self.clusters.append(softClustering)
-                self.realLabels.append(labels.cpu().data.numpy())
+	def take_clusters(self):
+		for weights in self.model[0].parameters():
+			#for index in range(self.n_clusters):
+				#print(weights.data[index]) 
+			#print(weights)
+			return weights
 
-                softSil = self.softSilhouette.soft_silhouette(realData, softClustering, requires_distance_grad=True)
-                
-                total_loss = 1 - softSil
-        
-                sumClusteringLoss += 1 - softSil.item()
-                
-                sumSoftSilhouette += softSil.item()
-                
-                optimizer.zero_grad()
-                total_loss.backward()
-                optimizer.step()
-            
-           
-            
-            self.clusters = torch.cat(self.clusters, dim=0)
-            self.clusters = self.evaluation.clusters_to_numpy(self.clusters)
-            self.realLabels = np.concatenate(self.realLabels)
-            self.realData = np.concatenate(self.realData)   
-            acc, pur, nmi, ari, sil = self.evaluation.autoencoder_evaluation(self.realData,self.realLabels.astype(int),self.clusters)
-            print(f"Epoch: {epoch} CL_LOSS: {sumClusteringLoss:.4f} SOFT_SIL: {sumSoftSilhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}")
-            self.df.loc[epoch] = [sumClusteringLoss,sumSoftSilhouette,acc,pur,nmi,ari]
-            
-    def setPath(self):
-        self.desPath =  self.datasetName+"_With_"+str(self.trEpochs)+'_Eps'
-        self.desPath += "_in_" + str(self.inputDim)
-        if(self.h1MActive):
-          self.desPath += "_h1_" + str(self.h1MDim) + "-" + str(self.h1MActFunc)  
-        if(self.h2MActive):
-          self.desPath += "_h2_" + str(self.h2MDim) + "-" + str(self.h2MActFunc)
-        self.desPath += "_out_"+str(self.nClusters) + "-" + str(self.outMActFunc)      
-        self.desPath += "_bs_"+str(self.batchSize)+"_l_"+str(self.trLR)
-        self.dataDirPath = self.pathToModule + "/" + self.datasetName + "/MLP/" + self.desPath
-            
-def createMLP(pathToModule, datasetName, device, dataloader, batchSize, trEpochs, trLR, nClusters, negativeSlope, inputDim, kmeans_n_init):
-    # Create an instance of your autoencoder
-    mlp = MLP(pathToModule, datasetName, device, dataloader, batchSize, trEpochs, trLR, nClusters, negativeSlope, inputDim, kmeans_n_init)
-    return mlp.to(device)
+	def torch_to_numpy(self, clusters):
+		# Get the data clusters based on max neuron
+		clusters = torch.argmax(clusters, dim=1)
+		clusters = clusters.cpu().detach().numpy()
+		return clusters
 
+	def train(self):
+		self.df_eval = pd.DataFrame(columns=['Cl_Loss','Soft_Sil','Accuracy','Purity','Nmi','Ari'])
+		optimizer = optim.Adam(self.parameters(), lr=self.lr)
+		
+		# Train MLP
+		for epoch in range(self.n_epochs):
+			self.data_list = list()
+			self.clusters_list = list()
+			self.labels_list = list()
+			
+			sum_soft_silhouette = 0
+			sum_clustering_loss = 0
+			
+			for batch_index, (data, labels) in enumerate(self.dataloader):
+				data = data.to(self.device)
+				self.soft_clustering = self.forward(data).to(self.device)
 
-    
+				soft_sil = self.softSilhouette.soft_silhouette(data, self.soft_clustering, requires_distance_grad=True)
+				clustering_loss = 1 - soft_sil
 
-        
-        
-        
-        
+				sum_soft_silhouette += soft_sil.item()
+				sum_clustering_loss += clustering_loss.item()
+				
+				optimizer.zero_grad()
+				clustering_loss.backward()
+				optimizer.step()
+
+				self.data_list.append(data.cpu().detach().numpy())
+				self.labels_list.append(labels.cpu().detach().numpy())
+				self.clusters_list.append(self.soft_clustering)
+
+			self.clusters_list = torch.cat(self.clusters_list, dim=0)
+			self.clusters_list = self.torch_to_numpy(self.clusters_list)
+			self.labels_list = np.concatenate(self.labels_list).astype(int)
+			self.data_list = np.concatenate(self.data_list)
+			acc, pur, nmi, ari, sil = self.evaluator.evaluate_model(self.data_list, self.labels_list, self.clusters_list)
+			self.df_eval.loc[epoch] = [sum_clustering_loss, sum_soft_silhouette, acc, pur, nmi, ari]
+
+			print(f'Epoch: {epoch} CL_LOSS: {sum_clustering_loss:.4f} SOFT_SIL: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
+			
+	def set_path(self):
+		self.dest_path = os.path.join(self.dataset_name, '_With_', str(self.n_epochs), '_Eps_out_', str(self.n_clusters), '_bs_', str(self.batch_size), '_lr_', str(self.lr))
+		self.data_dir_path = self.path_to_module + '/' + self.dataset_name + '/MLP/' + self.dest_path
+			
+
+	
+
+		
+		
+		
+		

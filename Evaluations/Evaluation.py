@@ -10,14 +10,13 @@ class Evaluator:
 	def __init__(self):
 		pass
 
-	def evaluate_clustering(self, labels_true, labels_pred):
+	def evaluate_model(self, data, labels_true, labels_pred):		
 		self.nmi = normalized_mutual_info_score(labels_true, labels_pred)
 		self.ari = adjusted_rand_score(labels_true, labels_pred)
-		self.cluster_accuracy = self.__compute_cluster_accuracy(labels_true, labels_pred)[0]		
-		self.purity = self.__compute_purity(labels_true, labels_pred)
-		
-	def print_evaluation(self):
-		print('ACC: {:.2f} PUR: {:.2f} NMI: {:.2f} ARI: {:.2f}'.format(self.cluster_accuracy, self.purity, self.nmi, self.ari))
+		self.acc = self.__compute_cluster_accuracy(labels_true, labels_pred)[0]
+		self.pur = self.__compute_purity(labels_true, labels_pred)
+		self.sil = silhouette_score(data, labels_pred)
+		return self.acc, self.pur, self.nmi, self.ari, self.sil
 
 	def get_cluster_accuracy(self):
 		return self.cluster_accuracy
@@ -30,6 +29,9 @@ class Evaluator:
 
 	def get_ari(self):
 		return self.ari
+
+	def print_evaluation(self):
+		print('ACC: {:.2f} PUR: {:.2f} NMI: {:.2f} ARI: {:.2f}'.format(self.cluster_accuracy, self.purity, self.nmi, self.ari))
 
 	def __compute_cluster_accuracy(self, labels_true, labels_pred, cluster_number: Optional[int] = None):
 		"""
