@@ -17,7 +17,7 @@ class Visualization:
     def plot_tsne(self, figxsize=10, figysize=10, mlp=False):
         
         plt.figure(figsize=(figxsize, figysize))
-        unique_labels = np.unique(self.model.clusters_list).astype(int)
+        unique_labels = np.unique(self.model.labels_list).astype(int)
         
         # Cluster with TSNE
         tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=300)
@@ -29,7 +29,7 @@ class Visualization:
             tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, self.model.latent_data_list)))
         
         for label_id in unique_labels:
-            selected_indexes = np.where(self.model.clusters_list == label_id)[0]
+            selected_indexes = np.where(self.model.labels_list == label_id)[0]
             x = tsne_embeddings[self.model.n_clusters:][selected_indexes, 0]
             y = tsne_embeddings[self.model.n_clusters:][selected_indexes, 1]
             c = [self.color_list[label_id]] * selected_indexes.shape[0]

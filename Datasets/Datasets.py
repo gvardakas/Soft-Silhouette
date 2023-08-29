@@ -20,7 +20,7 @@ from PIL import Image
 
 SHUFFLE = True 
 
-folder_path = 'C:/Users/PAPASOFT INC/Desktop/SOFT_SIL/datasets/'
+folder_path = './Datasets/' #'C:/Users/PAPASOFT INC/Desktop/SOFT_SIL/datasets/'
 
 def get_3D_Spheres_np(batch_size=64, option_name = ''):
     num_samples = 500

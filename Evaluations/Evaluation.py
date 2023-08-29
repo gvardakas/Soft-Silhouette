@@ -15,7 +15,7 @@ class Evaluator:
 		self.ari = adjusted_rand_score(labels_true, labels_pred)
 		self.acc = self.__compute_cluster_accuracy(labels_true, labels_pred)[0]
 		self.pur = self.__compute_purity(labels_true, labels_pred)
-		self.sil = silhouette_score(data, labels_pred)
+		self.sil = 0 # silhouette_score(data, labels_pred)
 		return self.acc, self.pur, self.nmi, self.ari, self.sil
 
 	def get_cluster_accuracy(self):

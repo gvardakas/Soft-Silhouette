@@ -69,14 +69,40 @@ class GenericAutoencoder(nn.Module):
 	def forward_softMax(self, x):
 		x = x.to(self.device)
 		x = self.encoder_model(x)
+		x = self.norm_to_unit_vector_tr(x)
 		x = self.cluster_model(x)
 		x = softmax(x, dim=1)
 		return x
+
+	def norm_to_unit_vector_tr(self, x):
+		# Calculate the L2 norm along axis 1
+		norm_x = torch.norm(x, dim=1, keepdim=True)
+
+		# Avoid division by zero by handling zero norms
+		norm_x[norm_x == 0] = 1.0
+
+		# Normalize x
+		normalized_x = x / norm_x
+
+		return x
+
+	def norm_to_unit_vector_np(self, x):
+	    # Calculate the L2 norm of x
+	    norm_x = np.linalg.norm(x, axis=1, keepdims=True)
+	    # Avoid division by zero by handling zero norms
+	    norm_x[norm_x == 0] = 1.0
+	    # Normalize x
+	    normalized_x = x / norm_x
+
+	    return normalized_x
 
 	def get_latent_data(self):
 		latent_data_list, labels_list = list(), list()
 
 		for batch_index, (data, labels) in enumerate(self.dataloader):
+			if self.needsReshape: #TODO
+				data = torch.reshape(data, (data.shape[0], self.n_channels, self.IMG_SIZE, self.IMG_SIZE))
+				
 			code = self.encoder(data).to(self.device)
 			code = code.cpu().detach().numpy()
 
@@ -87,6 +113,7 @@ class GenericAutoencoder(nn.Module):
 	
 	def kmeans_initialization(self, n_init=10):
 		latent_data, labels = self.get_latent_data()
+		latent_data = self.norm_to_unit_vector_np(latent_data)
 		kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(latent_data)
 		
 		for weights in self.cluster_model[0].parameters():
