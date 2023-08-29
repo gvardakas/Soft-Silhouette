@@ -107,7 +107,7 @@ class MLP(nn.Module):
 
 				sum_soft_silhouette += soft_sil.item()
 				sum_clustering_loss += clustering_loss.item()
-				sum_entropy += self.entr_lambda * mean_entropy
+				sum_entropy += self.entr_lambda * mean_entropy.item()
 
 				optimizer.zero_grad()
 				total_loss.backward()

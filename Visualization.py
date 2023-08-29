@@ -17,26 +17,26 @@ class Visualization:
     def plot_tsne(self, figxsize=10, figysize=10, mlp=False):
         
         plt.figure(figsize=(figxsize, figysize))
-        unique_labels = np.unique(self.model.clusters).astype(int)
+        unique_labels = np.unique(self.model.clusters_list).astype(int)
         
         # Cluster with TSNE
         tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=300)
         
         cluster_centers = self.model.take_clusters().cpu().detach().numpy()
         if mlp:
-            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers,self.model.data_list)))
+            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, self.model.data_list)))
         else:
-            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers,self.model.latentData)))
+            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, self.model.latent_data_list)))
         
         for label_id in unique_labels:
-            selected_indexes = np.where(self.model.clusters == label_id)[0]
-            x = tsne_embeddings[self.model.nClusters:][selected_indexes, 0]
-            y = tsne_embeddings[self.model.nClusters:][selected_indexes, 1]
+            selected_indexes = np.where(self.model.clusters_list == label_id)[0]
+            x = tsne_embeddings[self.model.n_clusters:][selected_indexes, 0]
+            y = tsne_embeddings[self.model.n_clusters:][selected_indexes, 1]
             c = [self.color_list[label_id]] * selected_indexes.shape[0]
             plt.scatter(x=x, y=y, c=c, edgecolors='black')
         
         # Plot cluster centers
-        plt.scatter(tsne_embeddings[:self.model.nClusters, 0], tsne_embeddings[:self.model.nClusters, 1], c='red', marker='x', s=300, label='Cluster Centers')
+        plt.scatter(tsne_embeddings[:self.model.n_clusters, 0], tsne_embeddings[:self.model.n_clusters, 1], c='red', marker='x', s=300, label='Cluster Centers')
          
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks
@@ -45,8 +45,8 @@ class Visualization:
         plt.yticks([])  # Pass an empty list to remove ticks
 
         plt.tight_layout()
-        self.create_directory_if_not_exists(self.model.expDirPath+ "\\TSNE")
-        plt.savefig(self.model.expDirPath + "\\TSNE\\" + self.model.experimentName+"_TSNE.png")
+        #self.create_directory_if_not_exists(self.model.expDirPath+ "\\TSNE")
+        #plt.savefig(self.model.expDirPath + "\\TSNE\\" + self.model.experimentName+"_TSNE.png")
         #plt.show()    
     
     def plot(self, figxsize=10, figysize=10, mlp=False):

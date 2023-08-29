@@ -672,7 +672,7 @@ def load_R3_np():
     data = np.vstack(data)
     labels = np.repeat(np.arange(len(means)), n_samples)
     data = MinMaxScaler().fit_transform(data).astype(np.float32)
-    data = normalize_data(data)
+    # data = normalize_data(data)
     return data, labels
 
 def load_R3_dataloader(batch_size=64, option_name=''):
