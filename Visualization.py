@@ -1,43 +1,45 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.patches as mpatches
-from sklearn.manifold import TSNE
-import os.path
-from os import path
-from openpyxl import load_workbook,Workbook
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from matplotlib.ticker import FixedLocator
+import matplotlib.colors as mcolors
+
+
+from sklearn.manifold import TSNE
+
+from openpyxl import load_workbook,Workbook
+import os.path
 
 class Visualization:
-    def __init__(self,color_list,fontsize,model):
-        self.color_list = color_list
-        self.fontsize = fontsize
-        self.model = model
-        
-    def plot_tsne(self, figxsize=10, figysize=10, mlp=False):
-        
-        plt.figure(figsize=(figxsize, figysize))
-        unique_labels = np.unique(self.model.labels_list).astype(int)
-        
-        # Cluster with TSNE
+
+    def __init__(self):
+        self.color_list = self.init_color_list()
+
+    def init_color_list(self):
+        color_list = list(mcolors.CSS4_COLORS.keys()) + list(mcolors.XKCD_COLORS.keys())
+        np.random.shuffle(color_list)
+        color_list = ['deepskyblue', 'gold', 'hotpink', 'limegreen'] + color_list
+        return color_list
+
+    def plot_tsne(self, data, y_true, y_predict, cluster_centers):
         tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=300)
-        
-        cluster_centers = self.model.take_clusters().cpu().detach().numpy()
-        if mlp:
-            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, self.model.data_list)))
-        else:
-            tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, self.model.latent_data_list)))
-        
+        tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, data)))
+
+        n_clusters = cluster_centers.shape[0]
+        unique_labels = np.unique(y_true).astype(int)
+
+        plt.figure(figsize=(10, 10))
         for label_id in unique_labels:
-            selected_indexes = np.where(self.model.labels_list == label_id)[0]
-            x = tsne_embeddings[self.model.n_clusters:][selected_indexes, 0]
-            y = tsne_embeddings[self.model.n_clusters:][selected_indexes, 1]
+            selected_indexes = np.where(y_true == label_id)[0]
+            x = tsne_embeddings[n_clusters:][selected_indexes, 0]
+            y = tsne_embeddings[n_clusters:][selected_indexes, 1]
             c = [self.color_list[label_id]] * selected_indexes.shape[0]
             plt.scatter(x=x, y=y, c=c, edgecolors='black')
-        
+
         # Plot cluster centers
-        plt.scatter(tsne_embeddings[:self.model.n_clusters, 0], tsne_embeddings[:self.model.n_clusters, 1], c='red', marker='x', s=300, label='Cluster Centers')
-         
+        plt.scatter(tsne_embeddings[:n_clusters, 0], tsne_embeddings[:n_clusters, 1], c='red', marker='x', s=500, edgecolors='black', label='Cluster Centers')
+
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks
 
@@ -47,34 +49,23 @@ class Visualization:
         plt.tight_layout()
         #self.create_directory_if_not_exists(self.model.expDirPath+ "\\TSNE")
         #plt.savefig(self.model.expDirPath + "\\TSNE\\" + self.model.experimentName+"_TSNE.png")
-        #plt.show()    
-    
-    def plot(self, figxsize=10, figysize=10, mlp=False):
-        
-        plt.figure(figsize=(figxsize, figysize))
-        
-        unique_labels = np.unique(self.model.clusters_list).astype(int)
-        
-        # Cluster with TSNE
-        if mlp:
-            for label_id in unique_labels:
-                selected_indexes = np.where(self.model.clusters_list == label_id)[0]
-                x = self.model.data_list[selected_indexes, 0]
-                y = self.model.data_list[selected_indexes, 1]
-                c = [self.color_list[label_id]] * selected_indexes.shape[0]
-                plt.scatter(x=x, y=y, c=c, edgecolors='black')
-        else:
-            for label_id in unique_labels:
-                selected_indexes = np.where(self.model.clusters_list == label_id)[0]
-                x = self.model.latentData[selected_indexes, 0]
-                y = self.model.latentData[selected_indexes, 1]
-                c = [self.color_list[label_id]] * selected_indexes.shape[0]
-                plt.scatter(x=x, y=y, c=c, edgecolors='black')
-        if mlp:
-            cluster_centers = self.model.get_clustering_layer_centers().cpu().detach().numpy()
-            # Plot cluster centers
-            plt.scatter(cluster_centers[:, 0], cluster_centers[:, 1], c='red', marker='x', s=300, label='Cluster Centers')
-        
+        #plt.show() 
+
+    def plot(self, data, y_true, y_predict, cluster_centers):
+        n_clusters = cluster_centers.shape[0]
+        unique_labels = np.unique(y_true).astype(int)
+
+        plt.figure(figsize=(10, 10))
+        for label_id in unique_labels:
+            selected_indexes = np.where(y_true == label_id)[0]
+            x = data[selected_indexes, 0]
+            y = data[selected_indexes, 1]
+            c = self.color_list[label_id]
+            plt.scatter(x=x, y=y, c=[c] * selected_indexes.shape[0], edgecolors='black')
+
+        # Plot cluster centers
+        plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, edgecolors='black', label='Cluster Centers')
+
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks
 
@@ -82,32 +73,29 @@ class Visualization:
         plt.yticks([])  # Pass an empty list to remove ticks
 
         plt.tight_layout()
-        
-        #self.create_directory_if_not_exists(self.model.expDirPath+ "\\No_TSNE")
-        #plt.savefig(self.model.expDirPath + "\\No_TSNE\\" + self.model.experimentName+"_No_TSNE.png")
-        #plt.show()    
-    
-    def plot_3D(self, figxsize=10, figysize=10, mlp=False):
-        
-        fig = plt.figure(figsize=(figxsize, figysize))
-        ax = fig.add_subplot(111, projection='3d')
-        
-        unique_labels = np.unique(self.model.realLabels).astype(int)
+        #self.create_directory_if_not_exists(self.model.expDirPath+ "\\TSNE")
+        #plt.savefig(self.model.expDirPath + "\\TSNE\\" + self.model.experimentName+"_TSNE.png")
+        #plt.show()   
+
+    def plot_3D(self, data, y_true, y_predict, cluster_centers):
+        unique_labels = np.unique(y_true).astype(int)
         
         # Cluster with TSNE
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111, projection='3d')
         
         for label_id in unique_labels:
-            selected_indexes = np.where(self.model.realLabels == label_id)[0]
-            x = self.model.latentData[selected_indexes, 0]
-            y = self.model.latentData[selected_indexes, 1]
-            z = self.model.latentData[selected_indexes, 2]
+            selected_indexes = np.where(y_true == label_id)[0]
+            x = data[selected_indexes, 0]
+            y = data[selected_indexes, 1]
+            z = data[selected_indexes, 2]
             c = [self.color_list[label_id]] * selected_indexes.shape[0]
             ax.scatter(x, y, z, c=c)
         
         # Set labels
-        ax.set_xlabel('$x$', fontsize = self.fontsize)
-        ax.set_ylabel('$y$', fontsize = self.fontsize)
-        ax.set_zlabel('$z$', fontsize = self.fontsize)
+        ax.set_xlabel('$x$', fontsize = 10)
+        ax.set_ylabel('$y$', fontsize = 10)
+        ax.set_zlabel('$z$', fontsize = 10)
         
         ax.set_xlim(-10,10)
         ax.set_ylim(-10,10)
@@ -115,46 +103,7 @@ class Visualization:
         
         plt.tight_layout()
         
-        self.create_directory_if_not_exists(self.model.expDirPath+ "\\3D")
-        plt.savefig(self.model.expDirPath + "\\3D\\" + self.model.experimentName+"_3D.png")
+        # self.create_directory_if_not_exists(self.model.expDirPath+ "\\3D")
+        #plt.savefig(self.model.expDirPath + "\\3D\\" + self.model.experimentName+"_3D.png")
         #plt.show()    
-            
-    def saveExperimentResultsToExcel(self):
-        self.model.dataPath = self.model.dataDirPath + "\\Data.xlsx"
-        if(path.exists(self.model.dataPath)!=True):
-            dataWb = Workbook()
-            dataWb.save(self.model.dataPath)
 
-        excelDataWΒ = load_workbook(self.model.dataPath)
-        sheetNameSplittedArray = excelDataWΒ.sheetnames[-1].split("_")
-        
-        if len(sheetNameSplittedArray) == 1:
-            std=excelDataWΒ.get_sheet_by_name(sheetNameSplittedArray[0])
-            excelDataWΒ.remove_sheet(std)
-            self.model.experimentName = "Experiment_1"
-        elif sheetNameSplittedArray[1] != "":
-            self.model.experimentName = "Experiment_" + str(int(sheetNameSplittedArray[1]) + 1)
-        
-        dataWriter = pd.ExcelWriter(self.model.dataPath, engine = 'openpyxl')
-        dataWriter.book = excelDataWΒ
-
-        self.model.df.to_excel(dataWriter, sheet_name=self.model.experimentName)
-        dataWriter.save()
-        dataWriter.close()
-        
-    def makeExcel(self):
-        self.create_directory_if_not_exists(self.model.dataDirPath)
-        self.model.expDirPath = self.model.dataDirPath + "\\" + "Experiment_Plots"
-        self.create_directory_if_not_exists(self.model.expDirPath)
-        
-        self.saveExperimentResultsToExcel()
-        
-    def create_directory_if_not_exists(self,directory_path):
-        
-        """Create a directory if it doesn't already exist."""
-        if not os.path.exists(directory_path):
-            os.makedirs(directory_path)
-            print(f"Directory '{directory_path}' created successfully.")
-        else:
-            print(f"Directory '{directory_path}' already exists.")    
-    

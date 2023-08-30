@@ -31,7 +31,7 @@ class Evaluator:
 		return self.ari
 
 	def print_evaluation(self):
-		print('ACC: {:.2f} PUR: {:.2f} NMI: {:.2f} ARI: {:.2f}'.format(self.cluster_accuracy, self.purity, self.nmi, self.ari))
+		print('ACC: {:.2f} PUR: {:.2f} NMI: {:.2f} ARI: {:.2f}'.format(self.acc, self.pur, self.nmi, self.ari))
 
 	def __compute_cluster_accuracy(self, labels_true, labels_pred, cluster_number: Optional[int] = None):
 		"""

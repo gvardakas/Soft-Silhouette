@@ -619,14 +619,14 @@ def normalize_data(X):
     return normalized_X
 
 def load_R15_np():
-    path = folder_path+"/r15/R15.arff"
+    path = folder_path+"R15/R15.arff"
     df = pd.read_csv(path, skiprows=10, names=['x', 'y', 'class'])
     labels = df["class"].to_numpy()
     labels = LabelEncoder().fit_transform(labels)
     df.drop(columns=["class"], inplace=True)
     data = df.to_numpy()
     data = MinMaxScaler().fit_transform(data).astype(np.float32)
-    data = normalize_data(data)
+    # data = normalize_data(data)
     #############################   
     #valid_indices = np.where((labels == 0) | (labels == 9) | (labels == 14))[0]
     #data = data[valid_indices] 
@@ -638,9 +638,7 @@ def load_R15_dataloader(batch_size=64, option_name=''):
 	data_np, labels_np = load_R15_np()
 	# Convert to tensor dataset
 	data_tr = torch.Tensor(data_np)
-	print(data_tr.shape)
 	data_shape = data_tr.shape[1]
-	print(data_shape)
 	labels_tr = torch.Tensor(labels_np)
 	final_dataset = TensorDataset(data_tr, labels_tr)
 	dataloader = DataLoader(final_dataset, batch_size=batch_size, shuffle=SHUFFLE)

@@ -13,7 +13,6 @@ from Objectives import Objectives
 from Visualization import Visualization
 from Evaluations.Evaluation import Evaluator
 
-
 class GenericAutoencoder(nn.Module):
 
 	def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope):
@@ -69,32 +68,9 @@ class GenericAutoencoder(nn.Module):
 	def forward_softMax(self, x):
 		x = x.to(self.device)
 		x = self.encoder_model(x)
-		x = self.norm_to_unit_vector_tr(x)
 		x = self.cluster_model(x)
 		x = softmax(x, dim=1)
 		return x
-
-	def norm_to_unit_vector_tr(self, x):
-		# Calculate the L2 norm along axis 1
-		norm_x = torch.norm(x, dim=1, keepdim=True)
-
-		# Avoid division by zero by handling zero norms
-		norm_x[norm_x == 0] = 1.0
-
-		# Normalize x
-		normalized_x = x / norm_x
-
-		return x
-
-	def norm_to_unit_vector_np(self, x):
-	    # Calculate the L2 norm of x
-	    norm_x = np.linalg.norm(x, axis=1, keepdims=True)
-	    # Avoid division by zero by handling zero norms
-	    norm_x[norm_x == 0] = 1.0
-	    # Normalize x
-	    normalized_x = x / norm_x
-
-	    return normalized_x
 
 	def get_latent_data(self):
 		latent_data_list, labels_list = list(), list()
@@ -113,28 +89,29 @@ class GenericAutoencoder(nn.Module):
 	
 	def kmeans_initialization(self, n_init=10):
 		latent_data, labels = self.get_latent_data()
-		latent_data = self.norm_to_unit_vector_np(latent_data)
 		kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(latent_data)
+		self.evaluator.evaluate_model(latent_data, labels, kmeans.labels_)
+		self.evaluator.print_evaluation()
 		
 		for weights in self.cluster_model[0].parameters():
 			for index, center in enumerate(kmeans.cluster_centers_):
 				with torch.no_grad():
-					center = torch.from_numpy(center) 
-					center.requires_grad_()
+					center = torch.from_numpy(center).requires_grad_()
 					weights.data[index] = center
    
-	def take_clusters(self):
+	def get_cluster_centers(self):
 		for weights in self.cluster_model[0].parameters():
 			#for index in range(self.n_clusters):
 				#print(weights.data[index]) 
 			#print(weights)
 			return weights
 
+	# TODO Giannis
 	def save_pretrained_weights(self):
 		# Set the file path where you want to save the model's state dictionary
 		model_save_path = self.data_dir_path + "/Weigths/autoencoder_weights.pth"
 		
-		Visualization([],0,self).create_directory_if_not_exists(self.data_dir_path + "/Weigths")
+		# Visualization([],0,self).create_directory_if_not_exists(self.data_dir_path + "/Weigths")
 		
 		# Save the model's state dictionary
 		torch.save(self.state_dict(), model_save_path)
@@ -228,7 +205,7 @@ class GenericAutoencoder(nn.Module):
 			self.df_eval.loc[epoch] = [sum_rec_loss, sum_clustering_loss, sum_soft_silhouette, acc, pur, nmi, ari]
 			print(f'Ep: {epoch} Rec L: {sum_rec_loss:.4f} Cl L: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} SSil: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
 
-		return self
+		return self.latent_data_list, self.labels_list, self.clusters_list
 
 	def set_path(self):
 		self.dest_path = os.path.join(self.dataset_name, '_With_', str(self.n_epochs), '_Eps')
@@ -262,7 +239,7 @@ class Autoencoder(GenericAutoencoder):
 
 		# Clustering MLP - MLP Part from latent Dimension to Number of Clusters
 		self.cluster_model = nn.Sequential(
-	
+			
 			# Output Layer
 			nn.Linear(self.latent_dim, self.n_clusters, bias = False),
 			#nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
