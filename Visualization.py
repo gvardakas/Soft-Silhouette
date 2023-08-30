@@ -11,6 +11,8 @@ from sklearn.manifold import TSNE
 from openpyxl import load_workbook,Workbook
 import os.path
 
+from General_Functions import General_Functions
+
 class Visualization:
 
     def __init__(self):
@@ -22,7 +24,7 @@ class Visualization:
         color_list = ['deepskyblue', 'gold', 'hotpink', 'limegreen'] + color_list
         return color_list
 
-    def plot_tsne(self, data, y_true, y_predict, cluster_centers):
+    def plot_tsne(self, data, y_true, y_predict, cluster_centers, data_dir_path):
         tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=300)
         tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, data)))
 
@@ -47,11 +49,12 @@ class Visualization:
         plt.yticks([])  # Pass an empty list to remove ticks
 
         plt.tight_layout()
-        #self.create_directory_if_not_exists(self.model.expDirPath+ "\\TSNE")
-        #plt.savefig(self.model.expDirPath + "\\TSNE\\" + self.model.experimentName+"_TSNE.png")
-        #plt.show() 
-
-    def plot(self, data, y_true, y_predict, cluster_centers):
+        
+        exp_dir_path, experiment_name = General_Functions().save_plot(data_dir_path, "TSNE")
+        plt.savefig(exp_dir_path + "/" + experiment_name + "_TSNE.png")
+        plt.show() 
+    
+    def plot(self, data, y_true, y_predict, cluster_centers, data_dir_path):
         n_clusters = cluster_centers.shape[0]
         unique_labels = np.unique(y_true).astype(int)
 
@@ -73,11 +76,12 @@ class Visualization:
         plt.yticks([])  # Pass an empty list to remove ticks
 
         plt.tight_layout()
-        #self.create_directory_if_not_exists(self.model.expDirPath+ "\\TSNE")
-        #plt.savefig(self.model.expDirPath + "\\TSNE\\" + self.model.experimentName+"_TSNE.png")
-        #plt.show()   
+        
+        exp_dir_path, experiment_name = General_Functions().save_plot(data_dir_path, "No_TSNE")
+        plt.savefig(exp_dir_path + "/" + experiment_name + ".png")
+        plt.show()   
 
-    def plot_3D(self, data, y_true, y_predict, cluster_centers):
+    def plot_3D(self, data, y_true, y_predict, cluster_centers, data_dir_path):
         unique_labels = np.unique(y_true).astype(int)
         
         # Cluster with TSNE
@@ -103,7 +107,7 @@ class Visualization:
         
         plt.tight_layout()
         
-        # self.create_directory_if_not_exists(self.model.expDirPath+ "\\3D")
-        #plt.savefig(self.model.expDirPath + "\\3D\\" + self.model.experimentName+"_3D.png")
-        #plt.show()    
+        exp_dir_path, experiment_name = General_Functions().save_plot(data_dir_path, "3D")
+        plt.savefig(exp_dir_path + "/" + experiment_name + "_3D.png")
+        plt.show()    
 

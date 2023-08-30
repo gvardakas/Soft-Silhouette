@@ -12,6 +12,7 @@ import os
 from Objectives import Objectives
 from Visualization import Visualization
 from Evaluations.Evaluation import Evaluator
+from General_Functions import General_Functions
 
 class GenericAutoencoder(nn.Module):
 
@@ -106,12 +107,11 @@ class GenericAutoencoder(nn.Module):
 			#print(weights)
 			return weights
 
-	# TODO Giannis
 	def save_pretrained_weights(self):
 		# Set the file path where you want to save the model's state dictionary
 		model_save_path = self.data_dir_path + "/Weigths/autoencoder_weights.pth"
 		
-		# Visualization([],0,self).create_directory_if_not_exists(self.data_dir_path + "/Weigths")
+		General_Functions().create_directory(self.data_dir_path + "/Weigths")
 		
 		# Save the model's state dictionary
 		torch.save(self.state_dict(), model_save_path)
@@ -208,11 +208,11 @@ class GenericAutoencoder(nn.Module):
 		return self.latent_data_list, self.labels_list, self.clusters_list
 
 	def set_path(self):
-		self.dest_path = os.path.join(self.dataset_name, '_With_', str(self.n_epochs), '_Eps')
-		self.dest_path = os.path.join(self.dest_path, '_ld_', str(self.latent_dim), '_out_')
-		self.dest_path = os.path.join(self.dest_path, str(self.n_clusters), '_bs_', str(self.batch_size), '_lr_', str(self.lr))
-		self.dest_path = os.path.join(self.dest_path, '_sil_lambda_', str(self.sil_lambda))
-		self.data_dir_path = self.path_to_module + '/' + self.dataset_name + '/AE/' + self.dest_path
+		self.properties_name = str(self.n_epochs) + '_Eps'
+		self.properties_name += '_ld_' + str(self.latent_dim) + '_out_' + str(self.n_clusters)
+		self.properties_name += '_bs_' + str(self.batch_size) + '_lr_' + str(self.lr)
+		self.properties_name += '_sil_lambda_' + str(self.sil_lambda) + '_entr_lambda_' + str(self.entr_lambda)
+		self.data_dir_path = self.path_to_module + 'Results/' + self.dataset_name + '/AE/' + self.properties_name
 		
 class Autoencoder(GenericAutoencoder):
 	def __init__(self,  device, n_clusters, input_dim, latent_dim, negative_slope):
