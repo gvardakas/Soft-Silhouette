@@ -126,8 +126,11 @@ class MLP(nn.Module):
             print(f'Epoch: {epoch} Cl Loss: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} Soft Sil: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
     
     def set_path(self):
-        self.dest_path = os.path.join(self.dataset_name, '_With_', str(self.n_epochs), '_Eps_out_', str(self.n_clusters), '_bs_', str(self.batch_size), '_lr_', str(self.lr))
-        self.data_dir_path = self.path_to_module + '/' + self.dataset_name + '/MLP/' + self.dest_path
+        self.properties_name = str(self.n_epochs) + '_Eps'
+        self.properties_name += '_out_' + str(self.n_clusters)
+        self.properties_name += '_bs_' + str(self.batch_size) + '_lr_' + str(self.lr)
+        self.properties_name += '_entr_lambda_' + str(self.entr_lambda)
+        self.data_dir_path = self.path_to_module + 'Results/' + self.dataset_name + '/MLP/' + self.properties_name
         
         
         
