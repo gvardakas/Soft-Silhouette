@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 
 import torch
 import torch.nn as nn
-from torch.nn.functional import softmax
+from torch.nn.functional import softmax, normalize
 import torch.optim as optim
 
 import os

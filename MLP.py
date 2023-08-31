@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 
 import torch
 import torch.nn as nn
-from torch.nn.functional import softmax
+from torch.nn.functional import softmax, normalize
 import torch.optim as optim
 
 import os
@@ -124,7 +124,9 @@ class MLP(nn.Module):
             self.df_eval.loc[epoch] = [sum_clustering_loss, sum_soft_silhouette, acc, pur, nmi, ari]
 
             print(f'Epoch: {epoch} Cl Loss: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} Soft Sil: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
-    
+        
+        return self.data_list, self.labels_list, self.clusters_list
+
     def set_path(self):
         self.properties_name = str(self.n_epochs) + '_Eps'
         self.properties_name += '_out_' + str(self.n_clusters)
