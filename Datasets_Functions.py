@@ -40,6 +40,7 @@ def append_in_hashmap(has_key, key, value, file_path):
         pickle.dump(hashmap, file)
     
     return hashmap
+
 def delete_from_hashmap(key, file_path):
     file_name = file_path + 'datasets_hashmap.pkl'
     
@@ -52,6 +53,25 @@ def delete_from_hashmap(key, file_path):
     
     if key in hashmap:
         hashmap.pop(key)
+    
+    with open(file_name, 'wb') as file:
+        pickle.dump(hashmap, file)
+    
+    return hashmap
+
+def delete_from_inner_hashmap(keys, file_path):
+    file_name = file_path + 'datasets_hashmap.pkl'
+    
+    try:
+        with open(file_name, 'rb') as file:
+            hashmap = pickle.load(file)
+    except FileNotFoundError:
+        print("Hashmap file not found.")
+        hashmap = {}
+    
+    if keys[0] in hashmap:
+        if keys[1] in hashmap[keys[0]]:
+            hashmap[keys[0]].pop(keys[1])
     
     with open(file_name, 'wb') as file:
         pickle.dump(hashmap, file)
@@ -97,11 +117,11 @@ def update_inner_hashmap(keys, new_value, file_path):
     with open(file_name, 'wb') as file:
         pickle.dump(hashmap, file)    
 
-def function_get_dataset(dataset_properties):
+def function_get_dataset(dataset_name, dataset_properties):
     module = importlib.import_module(dataset_properties['module_name'])
-    function = getattr(module, dataset_properties['function_name'])
+    function = getattr(module, "get_dataset")
     
-    return function(batch_size=dataset_properties['batch_size'], option_name=dataset_properties['option_name'])
+    return function(dataset_name=dataset_name, batch_size=dataset_properties['batch_size'])
         
         
         
