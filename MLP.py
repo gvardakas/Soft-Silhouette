@@ -24,7 +24,7 @@ class MLP(nn.Module):
         self.objectives = Objectives(self.device)
 
         self.model = nn.Sequential(
-            nn.Linear(input_dim, n_clusters, bias=False),
+            nn.Linear(input_dim, n_clusters, bias=True), # TODO Look this
             #nn.ReLU(inplace=True),
             #nn.Sigmoid(),
             #nn.BatchNorm1d(n_clusters)
@@ -59,20 +59,11 @@ class MLP(nn.Module):
     def kmeans_initialization(self, n_init=10):
         data, labels = self.get_data()    
         kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(data)
-
-        for weights in self.model[0].parameters():
-            for index, center in enumerate(kmeans.cluster_centers_):
-                with torch.no_grad():
-                    center = torch.from_numpy(center) 
-                    center.requires_grad_()
-                    weights.data[index] = center
+        init_center = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
+        self.model[0].weight = nn.Parameter(init_center)
    
     def get_clustering_layer_centers(self):
-        for weights in self.model[0].parameters():
-            #for index in range(self.n_clusters):
-                #print(weights.data[index]) 
-            #print(weights)
-            return weights
+        return self.model[0].weight
 
     def torch_to_numpy(self, clusters):
         # Get the data clusters based on max neuron

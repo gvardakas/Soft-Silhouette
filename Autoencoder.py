@@ -91,21 +91,15 @@ class GenericAutoencoder(nn.Module):
 	def kmeans_initialization(self, n_init=10):
 		latent_data, labels = self.get_latent_data()
 		kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(latent_data)
+		init_center = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
+		self.cluster_model[0].weight = nn.Parameter(init_center)
+		
 		self.evaluator.evaluate_model(latent_data, labels, kmeans.labels_)
 		self.evaluator.print_evaluation()
-		
-		for weights in self.cluster_model[0].parameters():
-			for index, center in enumerate(kmeans.cluster_centers_):
-				with torch.no_grad():
-					center = torch.from_numpy(center).requires_grad_()
-					weights.data[index] = center
+	
    
 	def get_cluster_centers(self):
-		for weights in self.cluster_model[0].parameters():
-			#for index in range(self.n_clusters):
-				#print(weights.data[index]) 
-			#print(weights)
-			return weights
+		return self.cluster_model[0].weight
 
 	def save_pretrained_weights(self):
 		# Set the file path where you want to save the model's state dictionary
@@ -241,9 +235,7 @@ class Autoencoder(GenericAutoencoder):
 		self.cluster_model = nn.Sequential(
 			
 			# Output Layer
-			nn.Linear(self.latent_dim, self.n_clusters, bias = False),
-			#nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
-			#nn.BatchNorm1d(self.n_clusters) #WE HOLD IT
+			nn.Linear(self.latent_dim, self.n_clusters, bias=True), # TODO Look This
 		)
 	
 		# Decoder Model - ([Latent Space, Linear], [2000, LeakyReLU], [500, LeakyReLU], [500, LeakyReLU], [Input Space, Linear])
@@ -296,9 +288,7 @@ class CD_Autoencoder(GenericAutoencoder):
 		self.cluster_model = nn.Sequential(
 	
 			# Output Layer
-			nn.Linear(self.latent_dim, self.n_clusters, bias = False),
-			#nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
-			#nn.BatchNorm1d(self.n_clusters) #WE HOLD IT
+			nn.Linear(self.latent_dim, self.n_clusters, bias=True), # TODO Look This
 		)
 		
 		# Decoder 

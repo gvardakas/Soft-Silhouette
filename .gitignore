@@ -1,6 +1,7 @@
-Old-Version/Thesis/
 *.png
+*.pyc
 .ipynb_checkpoints
+Old-Version/Thesis/
 Old-Version/Hard-Silhouette-2D-example.ipynb
 Old-Version/datasets/MNIST
 Old-Version/datasets/Wine
@@ -17,6 +18,5 @@ Old-Version/datasets/10x_73k
 Datasets/EMNIST
 Datasets/Pendigits
 Results/
-__pycache__
 Datasets/*/
 PyTorch-Radial-Basis-Function-Layer-master
