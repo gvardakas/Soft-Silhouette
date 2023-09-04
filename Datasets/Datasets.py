@@ -308,7 +308,7 @@ def get_fashion_mnist_np():
 
     return data, labels
 
-def get_R15_np():
+def get_r15_np():
     path = folder_path+"R15/R15.arff"
     df = pd.read_csv(path, skiprows=10, names=['x', 'y', 'class'])
     labels = df["class"].to_numpy()
@@ -324,7 +324,7 @@ def get_R15_np():
     #############################    
     return data, labels
 
-def get_R3_np():
+def get_r3_np():
     # Define the means and covariances for the Gaussian blobs
     means = np.array([[0, 0], [5, 0], [10, 0]])
     sigma = 0.1
