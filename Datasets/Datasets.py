@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset,DataLoader, TensorDataset, BatchSampler, RandomSampler
-import torchvision
+from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets
 import torchvision.transforms as transforms
 import numpy as np
@@ -10,19 +9,15 @@ import pandas as pd
 import scipy.sparse
 import scipy.io
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-from sklearn.datasets import make_circles, make_moons, fetch_olivetti_faces, make_blobs
+from sklearn.datasets import make_circles, make_moons, make_blobs
 from mnist import MNIST
 import matplotlib.pyplot as plt
-import os
-#from k import mnist
-import pdb
-from PIL import Image
 
 SHUFFLE = True 
 
-folder_path = './Datasets/' #'C:/Users/PAPASOFT INC/Desktop/SOFT_SIL/datasets/'
+folder_path = './Datasets/'
 
-def get_3d_spheres_np(batch_size=64, option_name=''):
+def get_3d_spheres_np():
     num_samples = 500
     centers = [[0, 0, 0], [5, 0, 0]]
     cluster_std = [1.0, 1.0]
@@ -50,18 +45,6 @@ def get_3d_spheres_np(batch_size=64, option_name=''):
     plt.show()
     
     return data, labels
-
-def get_3d_spheres(batch_size=64, option_name=''):
-    data, labels = get_3D_Spheres_np()
-
-    # Convert to tensor dataset
-    data = torch.Tensor(data)
-    data_shape = data.shape[1]
-    labels = torch.Tensor(labels)
-    final_dataset = TensorDataset(data, labels)
-    dataloader = DataLoader(final_dataset, batch_size=batch_size, shuffle=SHUFFLE)
-    
-    return dataloader, data_shape, data, labels
 
 def get_moons_np():
     data, labels = make_moons(n_samples=1_000, noise=0.05, random_state=0)
@@ -369,15 +352,6 @@ def get_R3_np():
     # data = normalize_data(data)
     return data, labels
 
-def get_emnist_balanced_letters_np():
-    return get_emnist_general_np('letters')
-
-def get_emnist_balanced_digits_np():
-    return get_emnist_general_np('digits')
-
-def get_emnist_mnist_np():
-    return get_emnist_general_np('mnist')
-    
 def get_emnist_general_np(option):
     IMG_SIZE = 28
     # Options: balanced, byclass, bymerge, digits, letters, mnist
@@ -408,57 +382,15 @@ def get_emnist_general_np(option):
     
     return data, labels
 
-### New Datasets
-#####################
-def load_coil20_dataloader(batch_size=64):
-    IMG_SIZE = 28
-    transform = transforms.Compose([
-        transforms.Resize((IMG_SIZE, IMG_SIZE)),
-        transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
-        transforms.ToTensor(),  # Convert PIL image to tensor
-        # Add more transformations as needed
-    ])
-    dataset = datasets.ImageFolder(root=folder_path+'COIL-20/coil-20-proc', transform=transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=SHUFFLE)
+def get_emnist_balanced_letters_np():
+    return get_emnist_general_np('letters')
+
+def get_emnist_balanced_digits_np():
+    return get_emnist_general_np('digits')
+
+def get_emnist_mnist_np():
+    return get_emnist_general_np('mnist')
     
-    return dataloader, IMG_SIZE * IMG_SIZE, [], []     
-
-def load_cifar10_dataloader(batch_size=64):
-    IMG_SIZE = 28
-    # Define the data transformations
-    transform = transforms.Compose(
-        [
-         transforms.Resize((IMG_SIZE, IMG_SIZE)),
-         transforms.Grayscale(num_output_channels=1),
-         transforms.ToTensor(),
-         transforms.Normalize(0.5,0.5)])
-
-    # Load the CIFAR-10 dataset
-    dataset = torchvision.datasets.CIFAR10(root=folder_path+'CIFAR-10/data', train=True,
-                                            download=True, transform=transform)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                                              shuffle=SHUFFLE, num_workers=2)
-    
-    return dataloader, IMG_SIZE * IMG_SIZE, [], []     
-
-def load_stl10_dataloader(batch_size=64):
-    IMG_SIZE = 28
-    # Define the data transformations
-    transform = transforms.Compose(
-        [
-         transforms.Resize((IMG_SIZE, IMG_SIZE)),
-         transforms.Grayscale(num_output_channels=1),
-         transforms.ToTensor(),
-         transforms.Normalize(mean=(0.5), std=(0.5))])
-
-    # Load the STL-10 dataset
-    dataset = torchvision.datasets.STL10(root=folder_path+'STL-10/data', split='train',
-                                      download=True, transform=transform)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                                              shuffle=SHUFFLE, num_workers=2)
-    return dataloader, IMG_SIZE * IMG_SIZE, [], []     
-#####################
-
 def normalize_data(X):
     # Calculate the L2 norm of X
     norm_X = np.linalg.norm(X, axis=1, keepdims=True)
@@ -481,25 +413,6 @@ def get_dataset(dataset_name, batch_size=64):
     data_shape = data.shape[1]
     labels = torch.Tensor(labels_np)
     final_dataset = TensorDataset(data, labels)
-    dataloader = DataLoader(final_dataset, batch_size=batch_size, shuffle=SHUFFLE)
-
-    return dataloader, data_shape, data_np, labels_np
-
-#####
-def get_coli20_np():
-    data_np = np.load(folder_path + "COIL-20/data.npy")
-    labels_np = np.load(folder_path + "COIL-20/labels.npy")
-    
-    return data_np, labels_np
-
-def load_coil20_dataloader(batch_size=64, option_name = ''):
-    data_np, labels_np = get_coli20_np()
-    
-    data_tr = torch.Tensor(data_np)
-    data_tr = torch.reshape(data_tr, (data_tr.shape[0], 1, data_tr.shape[1], data_tr.shape[2]))
-    data_shape = data_tr.shape[1]
-    labels_tr = torch.Tensor(labels_np)
-    final_dataset = TensorDataset(data_tr, labels_tr)
     dataloader = DataLoader(final_dataset, batch_size=batch_size, shuffle=SHUFFLE)
 
     return dataloader, data_shape, data_np, labels_np
