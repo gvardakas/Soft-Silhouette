@@ -40,7 +40,7 @@ class MLP(nn.Module):
         self.path_to_module = path_to_module
         self.dataset_name = dataset_name
 
-    def forward(self, x, temp=0.5):
+    def forward(self, x, temp=0.25):
         x = x.to(self.device)
         x = self.model(x)
         x = softmax(x/temp, dim=1)

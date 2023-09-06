@@ -5,7 +5,6 @@ import matplotlib.patches as mpatches
 from matplotlib.ticker import FixedLocator
 import matplotlib.colors as mcolors
 
-
 from sklearn.manifold import TSNE
 
 from openpyxl import load_workbook,Workbook
@@ -40,7 +39,7 @@ class Visualization:
             plt.scatter(x=x, y=y, c=c, edgecolors='black')
 
         # Plot cluster centers
-        plt.scatter(tsne_embeddings[:n_clusters, 0], tsne_embeddings[:n_clusters, 1], c='red', marker='x', s=500, edgecolors='black', label='Cluster Centers')
+        plt.scatter(tsne_embeddings[:n_clusters, 0], tsne_embeddings[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
 
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks
@@ -67,7 +66,7 @@ class Visualization:
             plt.scatter(x=x, y=y, c=[c] * selected_indexes.shape[0], edgecolors='black')
 
         # Plot cluster centers
-        plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, edgecolors='black', label='Cluster Centers')
+        plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
 
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks
