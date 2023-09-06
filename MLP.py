@@ -61,7 +61,10 @@ class MLP(nn.Module):
         kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(data)
         init_centers = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
         self.model[0].centres = nn.Parameter(init_centers)
-        self.model[0].weight = nn.Parameter(init_centers)
+        #self.model[0].weight = nn.Parameter(init_centers)
+        
+        self.evaluator.evaluate_model(data, labels, kmeans.labels_)
+        self.evaluator.print_evaluation()
    
     def get_clustering_layer_centers(self):
         return self.model[0].centres
