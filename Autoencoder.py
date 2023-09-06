@@ -67,7 +67,7 @@ class GenericAutoencoder(nn.Module):
 		return x
 
 	# Forward with Soft Max for data x through Encoder Model (1st Part), MLP Model (2nd Part) and SoftMax Function (3rd Part)
-	def forward_softMax(self, x, temp=0.5):
+	def forward_softMax(self, x, temp=0.25):
 		x = x.to(self.device)
 		x = self.encoder_model(x)
 		x = self.cluster_model(x)
