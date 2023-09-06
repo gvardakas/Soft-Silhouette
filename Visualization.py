@@ -22,7 +22,25 @@ class Visualization:
         np.random.shuffle(color_list)
         color_list = ['deepskyblue', 'gold', 'hotpink', 'limegreen'] + color_list
         return color_list
+    
+    def plot_image(self, image, label):
+        plt.imshow(image.squeeze(), cmap='gray')  
+        plt.title(f"Label: {label}")
+        plt.axis('off')
+        plt.show()
+    
+    def plot_images(self, images, labels):
+        num_images_to_plot = len(images)
+        fig, axes = plt.subplots(1, num_images_to_plot, figsize=(12, 3))
 
+        for i in range(num_images_to_plot):
+            axes[i].imshow(images[i].squeeze(), cmap='gray')
+            axes[i].set_title(f"Label: {labels[i]}")
+            axes[i].axis('off')
+
+        plt.tight_layout()
+        plt.show()
+    
     def plot_tsne(self, data, y_true, y_predict, cluster_centers, data_dir_path):
         tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=300)
         tsne_embeddings = tsne.fit_transform(np.concatenate((cluster_centers, data)))
