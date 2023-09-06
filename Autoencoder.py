@@ -25,6 +25,7 @@ class GenericAutoencoder(nn.Module):
 		self.input_dim = input_dim
 		self.latent_dim = latent_dim
 		self.negative_slope = negative_slope
+		self.kernel = rbf.gaussian
 
 		self.evaluator = Evaluator()
 		self.objectives = Objectives(self.device)
@@ -238,7 +239,7 @@ class Autoencoder(GenericAutoencoder):
 			
 			# Output Layer
 			# nn.Linear(self.latent_dim, self.n_clusters, bias=True), # TODO Look This
-			rbf.RBF(self.latent_dim, self.n_clusters, rbf.gaussian),
+			rbf.RBF(self.latent_dim, self.n_clusters, self.kernel),
 
 		)
 	
@@ -292,8 +293,7 @@ class CD_Autoencoder(GenericAutoencoder):
 	
 			# Output Layer
 			# nn.Linear(self.latent_dim, self.n_clusters, bias=True),
-			rbf.RBF(self.latent_dim, self.n_clusters, rbf.gaussian),
-
+			rbf.RBF(self.latent_dim, self.n_clusters, self.kernel),
 		)
 		
 		# Decoder 

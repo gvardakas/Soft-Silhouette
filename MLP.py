@@ -23,9 +23,10 @@ class MLP(nn.Module):
         self.n_clusters = n_clusters
         self.evaluator = Evaluator()
         self.objectives = Objectives(self.device)
+        self.kernel = rbf.gaussian
 
         self.model = nn.Sequential(
-            rbf.RBF(input_dim, n_clusters, rbf.gaussian),
+            rbf.RBF(input_dim, n_clusters, self.kernel),
             # nn.Linear(input_dim, n_clusters, bias=True),
         )
 
