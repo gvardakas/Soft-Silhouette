@@ -369,24 +369,27 @@ def get_emnist_general_np(option):
 
     data = np.reshape(data, (-1, 1, IMG_SIZE, IMG_SIZE))
     labels = np.array(labels)
-    if option=='digits':
-        valid_indices = np.where(labels < 10)[0]
-    elif option=='letters':
-        valid_indices = np.where((labels >= 10) & (labels<20))[0]
-    
-    
-    data = data[valid_indices] 
-    labels = labels[valid_indices]
-    
     labels = LabelEncoder().fit_transform(labels)
     
     return data, labels
 
 def get_emnist_balanced_letters_np():
-    return get_emnist_general_np('letters')
+    data, labels = get_emnist_general_np('letters')
+    valid_indices = np.where((labels >= 10) & (labels < 20))[0]
+    
+    data = data[valid_indices] 
+    labels = labels[valid_indices]
+    
+    return data, labels
 
 def get_emnist_balanced_digits_np():
-    return get_emnist_general_np('digits')
+    data, labels = get_emnist_general_np('digits')
+    valid_indices = np.where(labels < 10)[0]
+
+    data = data[valid_indices] 
+    labels = labels[valid_indices]
+    
+    return data, labels
 
 def get_emnist_mnist_np():
     return get_emnist_general_np('mnist')
