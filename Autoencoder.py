@@ -13,6 +13,7 @@ from Objectives import Objectives
 from Visualization import Visualization
 from Evaluations.Evaluation import Evaluator
 from General_Functions import General_Functions
+import torch_rbf as rbf
 
 class GenericAutoencoder(nn.Module):
 
@@ -66,11 +67,11 @@ class GenericAutoencoder(nn.Module):
 		return x
 
 	# Forward with Soft Max for data x through Encoder Model (1st Part), MLP Model (2nd Part) and SoftMax Function (3rd Part)
-	def forward_softMax(self, x):
+	def forward_softMax(self, x, temp=0.5):
 		x = x.to(self.device)
 		x = self.encoder_model(x)
 		x = self.cluster_model(x)
-		x = softmax(x, dim=1)
+		x = softmax(x/temp, dim=1)
 		return x
 
 	def get_latent_data(self):
@@ -91,15 +92,15 @@ class GenericAutoencoder(nn.Module):
 	def kmeans_initialization(self, n_init=10):
 		latent_data, labels = self.get_latent_data()
 		kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(latent_data)
-		init_center = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
-		self.cluster_model[0].weight = nn.Parameter(init_center)
+		init_centers = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
+		self.cluster_model[0].centres = nn.Parameter(init_centers)
 		
 		self.evaluator.evaluate_model(latent_data, labels, kmeans.labels_)
 		self.evaluator.print_evaluation()
 	
    
 	def get_cluster_centers(self):
-		return self.cluster_model[0].weight
+		return self.cluster_model[0].centres
 
 	def save_pretrained_weights(self):
 		# Set the file path where you want to save the model's state dictionary
@@ -170,6 +171,7 @@ class GenericAutoencoder(nn.Module):
 
 				soft_sil = self.objectives.soft_silhouette(code, soft_clustering, requires_distance_grad=True)
 				rec_loss = MSE(reconstructions, data)
+
 				clustering_loss = 1 - soft_sil
 				mean_entropy, _ = self.objectives.entropy(soft_clustering, base=2)
 
@@ -235,7 +237,9 @@ class Autoencoder(GenericAutoencoder):
 		self.cluster_model = nn.Sequential(
 			
 			# Output Layer
-			nn.Linear(self.latent_dim, self.n_clusters, bias=True), # TODO Look This
+			# nn.Linear(self.latent_dim, self.n_clusters, bias=True), # TODO Look This
+			rbf.RBF(self.latent_dim, self.n_clusters, rbf.gaussian),
+
 		)
 	
 		# Decoder Model - ([Latent Space, Linear], [2000, LeakyReLU], [500, LeakyReLU], [500, LeakyReLU], [Input Space, Linear])
@@ -254,7 +258,6 @@ class Autoencoder(GenericAutoencoder):
 	
 			nn.Linear(500, self.input_dim, bias = True),
 			nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True)
-			#nn.BatchNorm1d(self.input_dim) APAGOREYETAI
 		)
 		
 class CD_Autoencoder(GenericAutoencoder):
@@ -288,7 +291,9 @@ class CD_Autoencoder(GenericAutoencoder):
 		self.cluster_model = nn.Sequential(
 	
 			# Output Layer
-			nn.Linear(self.latent_dim, self.n_clusters, bias=True), # TODO Look This
+			# nn.Linear(self.latent_dim, self.n_clusters, bias=True),
+			rbf.RBF(self.latent_dim, self.n_clusters, rbf.gaussian),
+
 		)
 		
 		# Decoder 

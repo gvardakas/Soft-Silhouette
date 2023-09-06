@@ -12,6 +12,7 @@ import os
 from Objectives import Objectives
 from Visualization import Visualization
 from Evaluations.Evaluation import Evaluator
+import torch_rbf as rbf
 
 class MLP(nn.Module):
     
@@ -24,10 +25,8 @@ class MLP(nn.Module):
         self.objectives = Objectives(self.device)
 
         self.model = nn.Sequential(
-            nn.Linear(input_dim, n_clusters, bias=True), # TODO Look this
-            #nn.ReLU(inplace=True),
-            #nn.Sigmoid(),
-            #nn.BatchNorm1d(n_clusters)
+            rbf.RBF(input_dim, n_clusters, rbf.gaussian),
+            # nn.Linear(input_dim, n_clusters, bias=True),
         )
 
     def set_training_variables(self, dataloader, batch_size, n_epochs, lr, entr_lambda):
@@ -41,10 +40,10 @@ class MLP(nn.Module):
         self.path_to_module = path_to_module
         self.dataset_name = dataset_name
 
-    def forward(self, x):
+    def forward(self, x, temp=0.5):
         x = x.to(self.device)
         x = self.model(x)
-        x = softmax(x, dim=1)
+        x = softmax(x/temp, dim=1)
         return x
     
     def get_data(self):
@@ -59,11 +58,12 @@ class MLP(nn.Module):
     def kmeans_initialization(self, n_init=10):
         data, labels = self.get_data()    
         kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(data)
-        init_center = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
-        self.model[0].weight = nn.Parameter(init_center)
+        init_centers = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
+        self.model[0].centres = nn.Parameter(init_centers)
+        self.model[0].weight = nn.Parameter(init_centers)
    
     def get_clustering_layer_centers(self):
-        return self.model[0].weight
+        return self.model[0].centres
 
     def torch_to_numpy(self, clusters):
         # Get the data clusters based on max neuron
