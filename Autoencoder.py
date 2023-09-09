@@ -81,22 +81,23 @@ class GenericAutoencoder(nn.Module):
         return x
      
     def get_latent_data(self):
-        latent_data_list, labels_list = list(), list()
+        data_list, latent_data_list, labels_list = list(), list(), list()
 
         for batch_index, (data, labels) in enumerate(self.dataloader):
             if self.needsReshape: #TODO
                 data = torch.reshape(data, (data.shape[0], self.n_channels, self.IMG_SIZE, self.IMG_SIZE))
-                
+            data_list.append(data.cpu().detach().numpy())        
+
             code = self.encoder(data).to(self.device)
             code = code.cpu().detach().numpy()
 
             latent_data_list.append(code)
             labels_list.append(labels)
 
-        return np.concatenate(latent_data_list), np.concatenate(labels_list).astype(int)
+        return np.concatenate(data_list), np.concatenate(latent_data_list), np.concatenate(labels_list).astype(int)
     
     def get_similarity_data(self):
-        data_list, similarity_list, labels_list = list(), list(), list()
+        data_list, similarity_list, similarity_to_labels_list, labels_list = list(), list(), list(), list()
 
         for batch_index, (data, labels) in enumerate(self.dataloader):
             if self.needsReshape: #TODO
@@ -108,11 +109,11 @@ class GenericAutoencoder(nn.Module):
             data_list.append(data)
             similarity_list.append(similarity)
             labels_list.append(labels)
-
-        return np.concatenate(data_list), np.concatenate(similarity_list), np.concatenate(labels_list).astype(int)
+                
+        return np.concatenate(data_list), np.concatenate(similarity_list), np.argmax(np.concatenate(similarity_list), axis=1), np.concatenate(labels_list).astype(int)
     
     def kmeans_initialization(self, n_init=10):
-        latent_data, labels = self.get_latent_data()
+        _, latent_data, labels = self.get_latent_data()
         kmeans = KMeans(n_clusters=self.n_clusters, n_init=n_init).fit(latent_data)
         init_centers = torch.from_numpy(kmeans.cluster_centers_).to(self.device)
         self.cluster_model[0].centres = nn.Parameter(init_centers)
