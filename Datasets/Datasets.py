@@ -14,6 +14,7 @@ from mnist import MNIST
 import matplotlib.pyplot as plt
 
 SHUFFLE = True 
+IMG_SIZE = 28
 
 folder_path = './Datasets/'
 
@@ -288,7 +289,6 @@ def get_10x73k_np():
     return data, labels
 
 def get_fashion_mnist_np():
-    IMG_SIZE = 28
 
     transform = transforms.Compose([transforms.Resize(IMG_SIZE), transforms.ToTensor()])
     train = datasets.FashionMNIST(folder_path + "FashionMNIST", train=True, download=True, transform=transform)
@@ -352,8 +352,45 @@ def get_r3_np():
     # data = normalize_data(data)
     return data, labels
 
+def get_r100_np():
+    np.random.seed(42)
+ 
+    # Elements for high projections (DCN) 
+    sigmoid = lambda x: 1 / (1 + np.exp(-x))
+    W = np.random.normal(loc=0.0, scale=1.0, size=(2, 10))
+    U = np.random.normal(loc=0.0, scale=1.0, size=(10, 100))
+     
+    # Number of samples and dimensions
+    n_samples = 2500
+    n_features = 2
+     
+    center_1 = np.full(shape=(1, n_features), fill_value=0)
+    center_2 = np.full(shape=(1, n_features), fill_value=0)
+    center_3 = np.full(shape=(1, n_features), fill_value=0)
+    center_4 = np.full(shape=(1, n_features), fill_value=0)
+     
+    center_2[0][0] = 6
+    center_3[0][1] = 6
+     
+    center_4[0][0] = 6
+    center_4[0][1] = 6
+     
+    # Create data for each Gaussian cluster
+    cluster1 = make_blobs(n_samples=n_samples, n_features=n_features, centers=center_1, cluster_std=1.0)
+    cluster2 = make_blobs(n_samples=n_samples, n_features=n_features, centers=center_2, cluster_std=1.0)
+    cluster3 = make_blobs(n_samples=n_samples, n_features=n_features, centers=center_3, cluster_std=1.0)
+    cluster4 = make_blobs(n_samples=n_samples, n_features=n_features, centers=center_4, cluster_std=1.0)
+     
+    # Combine the clusters to form a 2x2 grid
+    data = np.vstack([cluster1[0], cluster2[0], cluster3[0], cluster4[0]])
+    data = sigmoid(sigmoid(data @ W) @ U)
+    data = MinMaxScaler().fit_transform(data).astype(np.float32)
+    labels = np.hstack([np.zeros(n_samples), np.ones(n_samples), 2 * np.ones(n_samples), 3 * np.ones(n_samples)])
+    labels = LabelEncoder().fit_transform(labels)
+
+    return data, labels
+
 def get_emnist_general_np(option):
-    IMG_SIZE = 28
     # Options: balanced, byclass, bymerge, digits, letters, mnist
     mndata = MNIST(folder_path + 'EMNIST')
     if option == 'mnist':
@@ -393,7 +430,7 @@ def get_emnist_balanced_digits_np():
 
 def get_emnist_mnist_np():
     return get_emnist_general_np('mnist')
-    
+
 def normalize_data(X):
     # Calculate the L2 norm of X
     norm_X = np.linalg.norm(X, axis=1, keepdims=True)
