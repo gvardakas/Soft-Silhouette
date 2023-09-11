@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from openpyxl import load_workbook,Workbook
@@ -58,6 +59,28 @@ class General_Functions:
         
         return exp_dir_path, experiment_name
     
+    def find_images_to_plot(self, min_label, max_label, data, similarity, labels):
+        images = []
+        for i in range(min_label, max_label):
+            image_indices_and_max_similarities = []
+            
+            valid_indices = np.where(labels == i)[0]
+            for index in valid_indices:
+                cur_max_similarity = similarity[index][np.argmax(similarity[index])]
+                image_indices_and_max_similarities.append((index, cur_max_similarity))
+
+            sorted_image_indices_and_max_similarities = sorted(image_indices_and_max_similarities, key=lambda x: x[1], reverse=True)
+            desired_similarity = sorted_image_indices_and_max_similarities[0][1]
+            
+            for index, max_similarity in sorted_image_indices_and_max_similarities:
+                if(max_similarity <= desired_similarity):
+                    images.append(data[index])
+                    desired_similarity = desired_similarity - 0.1 * desired_similarity
+                if(len(images) % 10 == 0):
+                    break
+        
+        return images          
+        
     def create_directory(self, directory_path):
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)

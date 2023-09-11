@@ -97,7 +97,7 @@ class GenericAutoencoder(nn.Module):
         return np.concatenate(data_list), np.concatenate(latent_data_list), np.concatenate(labels_list).astype(int)
     
     def get_similarity_data(self):
-        data_list, similarity_list, similarity_to_labels_list, labels_list = list(), list(), list(), list()
+        data_list, similarity_list, labels_list = list(), list(), list()
 
         for batch_index, (data, labels) in enumerate(self.dataloader):
             if self.needsReshape: #TODO
@@ -110,7 +110,7 @@ class GenericAutoencoder(nn.Module):
             similarity_list.append(similarity)
             labels_list.append(labels)
                 
-        return np.concatenate(data_list), np.concatenate(similarity_list), np.argmax(np.concatenate(similarity_list), axis=1), np.concatenate(labels_list).astype(int)
+        return np.concatenate(data_list), np.concatenate(similarity_list), np.concatenate(labels_list).astype(int)
     
     def kmeans_initialization(self, n_init=10):
         _, latent_data, labels = self.get_latent_data()

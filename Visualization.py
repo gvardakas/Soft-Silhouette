@@ -20,7 +20,7 @@ class Visualization:
     def init_color_list(self):
         color_list = list(mcolors.CSS4_COLORS.keys()) + list(mcolors.XKCD_COLORS.keys())
         np.random.shuffle(color_list)
-        color_list = ['deepskyblue', 'gold', 'hotpink', 'limegreen'] + color_list
+        color_list = ['deepskyblue', 'orange', 'hotpink', 'limegreen'] + color_list
         return color_list
     
     def plot_image(self, image, label):
@@ -28,18 +28,26 @@ class Visualization:
         plt.title(f"Label: {label}")
         plt.axis('off')
         plt.show()
+
+    def plot_collage(self, images, num_x_images, num_y_images, image_size, data_dir_path):
     
-    def plot_images(self, images, labels):
-        num_images_to_plot = len(images)
-        fig, axes = plt.subplots(1, num_images_to_plot, figsize=(12, 3))
+        # Create a blank canvas for the collage
+        collage_size = (image_size[0] * num_x_images, image_size[1] * num_y_images)
 
-        for i in range(num_images_to_plot):
-            axes[i].imshow(images[i].squeeze(), cmap='gray')
-            axes[i].set_title(f"Label: {labels[i]}")
-            axes[i].axis('off')
+        fig, axes = plt.subplots(num_x_images, num_y_images, figsize=(8, 8))
 
-        plt.tight_layout()
+        for i in range(num_x_images):
+            for j in range(num_y_images):
+                index = i * num_x_images + j
+                image = images[index].reshape(image_size[0], image_size[1])
+                
+                axes[i, j].imshow(image, cmap='gray')
+                axes[i, j].axis('off')
+
+        plt.subplots_adjust(wspace=0, hspace=0)
+        plt.savefig(data_dir_path + "/Experiments/Collage.png")
         plt.show()
+
     
     def plot_tsne(self, data, y_true, y_predict, cluster_centers, data_dir_path):
         tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=300)
@@ -54,7 +62,7 @@ class Visualization:
             x = tsne_embeddings[n_clusters:][selected_indexes, 0]
             y = tsne_embeddings[n_clusters:][selected_indexes, 1]
             c = [self.color_list[label_id]] * selected_indexes.shape[0]
-            plt.scatter(x=x, y=y, c=c, edgecolors='black')
+            plt.scatter(x=x, y=y, c=c) #, edgecolors='black')
 
         # Plot cluster centers
         plt.scatter(tsne_embeddings[:n_clusters, 0], tsne_embeddings[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
@@ -64,7 +72,9 @@ class Visualization:
 
         # Remove y-axis numbering and label
         plt.yticks([])  # Pass an empty list to remove ticks
-
+        
+        plt.axis('off')
+        
         plt.tight_layout()
         
         exp_dir_path, experiment_name = General_Functions().save_plot(data_dir_path, "TSNE")
@@ -81,7 +91,7 @@ class Visualization:
             x = data[selected_indexes, 0]
             y = data[selected_indexes, 1]
             c = self.color_list[label_id]
-            plt.scatter(x=x, y=y, c=[c] * selected_indexes.shape[0], edgecolors='black')
+            plt.scatter(x=x, y=y, c=[c] * selected_indexes.shape[0]) #, edgecolors='silver')
 
         # Plot cluster centers
         plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
@@ -93,6 +103,8 @@ class Visualization:
         plt.yticks([])  # Pass an empty list to remove ticks
 
         plt.tight_layout()
+        
+        plt.axis('off')
         
         exp_dir_path, experiment_name = General_Functions().save_plot(data_dir_path, "No_TSNE")
         plt.savefig(exp_dir_path + "/" + experiment_name + ".png")

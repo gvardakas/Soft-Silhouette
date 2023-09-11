@@ -20,3 +20,4 @@ Datasets/Pendigits
 Results/
 Datasets/*/
 PyTorch-Radial-Basis-Function-Layer-master
+__pycache__
