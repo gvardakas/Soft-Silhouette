@@ -65,7 +65,6 @@ class GenericDCNAutoencoder(nn.Module):
         self.n_clusters = n_clusters
         self.input_dim = input_dim
         self.latent_dim = latent_dim
-        self.n_channels = 1
         self.IMG_SIZE = 28
 
         self.kmeans = batch_KMeans(self.latent_dim, self.n_clusters)
