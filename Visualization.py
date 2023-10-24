@@ -94,7 +94,7 @@ class Visualization:
             plt.scatter(x=x, y=y, c=[c] * selected_indexes.shape[0]) #, edgecolors='silver')
 
         # Plot cluster centers
-        plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
+        #plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
 
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks

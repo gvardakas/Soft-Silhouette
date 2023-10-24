@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans
 from joblib import Parallel, delayed
 from Evaluations.Evaluation import Evaluator
 from torchvision import datasets, transforms
+from General_Functions import General_Functions
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 
 def _parallel_compute_distance(X, cluster):
@@ -24,7 +25,7 @@ class batch_KMeans(object):
         self.n_clusters = n_clusters
         self.clusters = np.zeros((self.n_clusters, self.n_features))
         self.count = 100 * np.ones((self.n_clusters)) 
-        self.n_jobs = 1
+        self.n_jobs = 4
 
     def _compute_dist(self, X):
         dis_mat = Parallel(n_jobs=self.n_jobs)(
@@ -123,6 +124,15 @@ class GenericDCNAutoencoder(nn.Module):
     def get_cluster_centers(self):
         return self.kmeans.clusters
 
+    def save_pretrained_weights(self):
+        # Set the file path where you want to save the model's state dictionary
+        model_save_path = self.data_dir_path + "/Weigths/autoencoder_weights.pth"
+        
+        General_Functions().create_directory(self.data_dir_path + "/Weigths")
+        
+        # Save the model's state dictionary
+        torch.save(self.state_dict(), model_save_path)
+
     def pretrain_autoencoder(self):
         MSE = nn.MSELoss().to(self.device)
         optimizer = optim.Adam(self.parameters(), lr=self.pret_lr, weight_decay=1e-5)
@@ -135,10 +145,6 @@ class GenericDCNAutoencoder(nn.Module):
                 else:    
                     data = torch.reshape(data, (data.shape[0], (self.IMG_SIZE * self.IMG_SIZE))).to(self.device)
 
-                rec_X = self.forward(data)
-                loss = MSE(data, rec_X)
-                """
-                """
                 reconstructions = self.forward(data)
                 rec_loss = MSE(reconstructions, data)
 
@@ -187,7 +193,7 @@ class GenericDCNAutoencoder(nn.Module):
                 dist_loss.detach().cpu().numpy())
 
     def train_autoencoder(self):
-        self.df_eval = pd.DataFrame(columns=['Loss','Rec_Loss','Dist_Loss','Accuracy','Purity','Nmi','Ari'])
+        self.df_eval = pd.DataFrame(columns=['Rec_Loss','Dist_Loss','Cl_Loss','Accuracy','Purity','Nmi','Ari'])
 
         optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=1e-5)
         MSE = nn.MSELoss()
@@ -250,7 +256,7 @@ class GenericDCNAutoencoder(nn.Module):
             self.latent_data_list = np.concatenate(self.latent_data_list)
 
             acc, pur, nmi, ari, sil = self.evaluator.evaluate_model(self.latent_data_list, self.labels_list, self.clusters_list)
-            self.df_eval.loc[epoch] = [sum_loss, sum_rec_loss, sum_dist_loss, acc, pur, nmi, ari]
+            self.df_eval.loc[epoch] = [sum_rec_loss, sum_dist_loss, sum_loss, acc, pur, nmi, ari]
             print(f'Ep: {epoch} L: {sum_loss:.4f} Rec L: {sum_rec_loss:.4f} Dist L: {sum_dist_loss:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
 
         return self.latent_data_list, self.labels_list, self.clusters_list
@@ -307,19 +313,20 @@ class DCNCDAutoencoder(GenericDCNAutoencoder):
         super(DCNCDAutoencoder, self).__init__(device, n_clusters, input_dim, latent_dim)
         self.needsReshape = True
         self.n_channels = n_channels
-        
+        self.negative_slope = 0
+
         # Encoder
         self.encoder_model = nn.Sequential(
             nn.Conv2d(self.n_channels, 32, kernel_size = 5, stride = 2, padding = 2),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(32),
     
             nn.Conv2d(32, 64, kernel_size = 5, stride = 2, padding = 2),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(64),
     
             nn.Conv2d(64, 128, kernel_size = 3, stride = 2, padding = 0),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(128),
     
             nn.Flatten(start_dim=1),
@@ -331,19 +338,19 @@ class DCNCDAutoencoder(GenericDCNAutoencoder):
         # Decoder 
         self.decoder_model = nn.Sequential(
             nn.Linear(self.latent_dim, 128 * 3 * 3, bias=True),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm1d(128 * 3 * 3),
             nn.Unflatten(dim = 1, unflattened_size = (128, 3, 3)),
     
             nn.ConvTranspose2d(128, 64, kernel_size = 3, stride = 2, padding = 0),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(64),
             
             nn.ConvTranspose2d(64, 32, kernel_size = 5, stride = 2, padding = 2, output_padding = 1),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(32),
             
             nn.ConvTranspose2d(32, self.n_channels, kernel_size = 5, stride = 2, padding = 2, output_padding = 1),            
-            nn.ReLU(),
-            nn.BatchNorm2d(self.n_channels)
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
+            #nn.BatchNorm2d(self.n_channels)
         )             
