@@ -34,18 +34,18 @@ class Visualization:
         # Create a blank canvas for the collage
         collage_size = (image_size[0] * num_x_images, image_size[1] * num_y_images)
 
-        fig, axes = plt.subplots(num_x_images, num_y_images, figsize=(8, 8))
+        fig, axes = plt.subplots(num_x_images, num_y_images, figsize=(image_size[0], image_size[1]), facecolor = 'black')
 
         for i in range(num_x_images):
             for j in range(num_y_images):
-                index = i * num_x_images + j
+                index = i * num_y_images + j
                 image = images[index].reshape(image_size[0], image_size[1])
                 
                 axes[i, j].imshow(image, cmap='gray')
                 axes[i, j].axis('off')
 
         plt.subplots_adjust(wspace=0, hspace=0)
-        plt.savefig(data_dir_path + "/Experiments/Collage.png")
+        plt.savefig(data_dir_path + "/Experiments/Collage.png", facecolor = 'white')
         plt.show()
 
     

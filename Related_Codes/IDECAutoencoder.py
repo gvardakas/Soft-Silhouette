@@ -14,12 +14,13 @@ from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 
 class GenericIDECAutoencoder(nn.Module):
 
-    def __init__(self, device, n_clusters, input_dim, latent_dim):
+    def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope):
         super(GenericIDECAutoencoder, self).__init__()
         self.device = device
         self.n_clusters = n_clusters
         self.input_dim = input_dim
         self.latent_dim = latent_dim
+        self.negative_slope = negative_slope
         self.IMG_SIZE = 28
         self.evaluator = Evaluator()
 
@@ -200,43 +201,51 @@ class GenericIDECAutoencoder(nn.Module):
         self.data_dir_path = self.path_to_module + 'Results/' + self.dataset_name + '/IDECAE/' + self.properties_name
 
 class IDECAutoencoder(GenericIDECAutoencoder):
-    def __init__(self,  device, n_clusters, input_dim, latent_dim):
-        super(DECAutoencoder, self).__init__( device, n_clusters, input_dim, latent_dim)
+    def __init__(self,  device, n_clusters, input_dim, latent_dim, negative_slope):
+        super(IDECAutoencoder, self).__init__( device, n_clusters, input_dim, latent_dim, negative_slope)
         self.needsReshape = False
                 
         self.encoder_model = nn.Sequential(
-            nn.Linear(self.input_dim, 500),
-            nn.ReLU(),
+            nn.Linear(self.input_dim, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.BatchNorm1d(500),
 
-            nn.Linear(500, 500),
-            nn.ReLU(),
+            nn.Linear(500, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.BatchNorm1d(500),
 
-            nn.Linear(500, 2000),
-            nn.ReLU(),
+            nn.Linear(500, 2000, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.BatchNorm1d(2000),
 
-            nn.Linear(2000, self.latent_dim),
+            nn.Linear(2000, self.latent_dim, bias = True),
+            #nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.Tanh(),
+            nn.BatchNorm1d(self.latent_dim)
         )
 
         self.decoder_model = nn.Sequential(
-          
-            nn.Linear(self.latent_dim, 2000),
-            nn.ReLU(),
+            nn.Linear(self.latent_dim, 2000, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.BatchNorm1d(2000),
 
-            nn.Linear(2000, 500),
-            nn.ReLU(),
+            nn.Linear(2000, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.BatchNorm1d(500),
 
-            nn.Linear(500, 500),
-            nn.ReLU(),
-    
-            nn.Linear(500, self.input_dim)
-        ) 
+            nn.Linear(500, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.BatchNorm1d(500),
+
+            nn.Linear(500, self.input_dim, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+        )
 
 class IDECCDAutoencoder(GenericIDECAutoencoder):           
-    def __init__(self, device, n_clusters, input_dim, latent_dim, n_channels):
-        super(IDECCDAutoencoder, self).__init__(device, n_clusters, input_dim, latent_dim)
+    def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope, n_channels):
+        super(IDECCDAutoencoder, self).__init__(device, n_clusters, input_dim, latent_dim, negative_slope)
         self.needsReshape = True
         self.n_channels = n_channels
-        self.negative_slope = 0
 
         self.encoder_model = nn.Sequential(
             nn.Conv2d(self.n_channels, 32, kernel_size = 5, stride = 2, padding = 2),
@@ -272,7 +281,6 @@ class IDECCDAutoencoder(GenericIDECAutoencoder):
             nn.BatchNorm2d(32),
             
             nn.ConvTranspose2d(32, self.n_channels, kernel_size = 5, stride = 2, padding = 2, output_padding = 1),            
-            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
-            #nn.BatchNorm2d(self.n_channels)
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True)
         )             
 

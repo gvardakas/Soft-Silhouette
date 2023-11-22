@@ -9,9 +9,21 @@ import pandas as pd
 import scipy.sparse
 import scipy.io
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-from sklearn.datasets import make_circles, make_moons, make_blobs
+from sklearn.datasets import make_circles, make_moons, make_blobs, fetch_20newsgroups, fetch_openml
 from mnist import MNIST
 import matplotlib.pyplot as plt
+from sklearn.feature_extraction.text import TfidfVectorizer
+from PIL import Image
+from sklearn.datasets import fetch_rcv1
+
+import re
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords, reuters
+
+# Download the missing tokenizer data
+nltk.download('punkt')
+nltk.download('stopwords')
 
 SHUFFLE = True 
 IMG_SIZE = 28
@@ -206,7 +218,7 @@ def get_dermatology_np():
     data = data[random_permutation]
     labels = labels[random_permutation]
     return data, labels
-
+"""
 def get_tcga_np():
     df_data = pd.read_csv(folder_path + 'TCGA/data.csv', index_col=0)
     df_labels = pd.read_csv(folder_path + 'TCGA/labels.csv', index_col=0)
@@ -218,30 +230,201 @@ def get_tcga_np():
     labels = LabelEncoder().fit_transform(labels)
 
     return data, labels
+"""
+def get_tcga_np():
+    df_train = pd.read_csv(folder_path + 'HARS/train.csv', index_col=0)
 
-def get_newsgroups_np():
-    #pdb.set_trace()
-    vectorizer = TfidfVectorizer()
-    newsgroups_train = fetch_20newsgroups(subset='train', remove=('headers', 'footers', 'quotes'))
-    data = vectorizer.fit_transform(newsgroups_train.data)
-    labels = newsgroups_train.target
+    df_test = pd.read_csv(folder_path + 'HARS/test.csv', index_col=0)
 
-    # Random Shuffle
-    total_size = data.shape[0]
-    data = data.todense()
-    random_permutation = np.random.permutation(np.arange(total_size))
-    data = data[random_permutation]
-    labels = labels[random_permutation]
+    df = pd.concat([df_train, df_test], axis=0, ignore_index=True)
 
-    # Select datapoints
-    if (data_points > 0):
-        data = data[:data_points]
-        labels = labels[:data_points]
+    del df_train, df_test
+    df_labels = df['Activity']
+    df.drop(columns=['subject','Activity'], inplace=True)
+    data = np.array(df)
+    labels = np.squeeze(np.array(df_labels))
 
-    for i in data[0]:
-        print(i)
+    data = MinMaxScaler().fit_transform(data)   
+    labels = LabelEncoder().fit_transform(labels)
+
+    return data, labels    
+
+from nltk.corpus import reuters, stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import MultiLabelBinarizer
+
+n_classes = 90
+labels = reuters.categories()
+
+
+def load_data(config={}):
+    """
+    Load the Reuters dataset.
+
+    Returns
+    -------
+    data : dict
+        with keys 'x_train', 'x_test', 'y_train', 'y_test', 'labels'
+    """
+    stop_words = stopwords.words("english")
+    vectorizer = TfidfVectorizer(stop_words=stop_words)
+    label_encoder = LabelEncoder()
+
+    documents = reuters.fileids()
+    test = [d for d in documents if d.startswith('test/')]
+    train = [d for d in documents if d.startswith('training/')]
+
+    docs = {}
+    docs['train'] = [reuters.raw(doc_id) for doc_id in train]
+    xs = {'train': []}
+    xs['train'] = vectorizer.fit_transform(docs['train']).toarray()
+    ys = {'train': []}
+    ys['train'] = label_encoder.fit_transform(np.array([reuters.categories(doc_id)
+                                     for doc_id in train]))
+    data = {'x_train': xs['train'], 'y_train': ys['train'],
+            'labels': globals()["labels"]}
+    return data
+
+
+def get_reuters_4_np():
+    # Load the RCV1 dataset
+    rcv1 = fetch_rcv1(subset='all')
     
+    # Determine the indices of documents with multiple categories
+    docs_with_multiple_categories = []
+    for i, target in enumerate(rcv1.target):
+        if np.sum(target) > 1:
+            docs_with_multiple_categories.append(i)
+    
+    # Remove documents with multiple categories
+    filtered_indices = [i for i in range(rcv1.data.shape[0]) if i not in docs_with_multiple_categories]
+    
+    # Create a new dataset with single-category documents
+    single_category_data = [rcv1.data[i] for i in filtered_indices]
+    single_category_target = [rcv1.target[i] for i in filtered_indices]
+    
+    # Filter the data based on your selected categories
+    selected_categories = ["CCAT", "ECAT", "GCAT", "MCAT", "GCAT", "GCAT"]
+    filtered_indices = []
+    for i, target in enumerate(rcv1.target):
+        if any(category in target for category in selected_categories):
+            filtered_indices.append(i)
+    
+    X = rcv1.data[filtered_indices]
+    labels = rcv1.target[filtered_indices]
+    print(labels.unique())
+    # Preprocess the data (e.g., TF-IDF vectorization)
+    tfidf = TfidfVectorizer(max_features=2000)
+    X = tfidf.fit_transform(X)
+    data = MinMaxScaler().fit_transform(X.toarray())
+    # Label Encoding
+    labels = LabelEncoder().fit_transform(labels)
+
+
+    #############################   
+    #valid_indices = np.where(labels < 5)[0]
+    #data = data[valid_indices] 
+    #labels = labels[valid_indices]
+    #############################  
     return data, labels
+
+def get_20_newsgroups_np():
+    """
+    # Load the dataset
+    newsgroups = fetch_20newsgroups(subset='all', remove=('headers', 'footers', 'quotes'))
+
+    # Clean the text
+    def clean_text(text):
+        text = re.sub(r'[^a-zA-Z]', ' ', text)
+        text = text.lower()
+        return text
+
+    cleaned_texts = [clean_text(text) for text in newsgroups.data]
+
+    # Tokenization
+    def tokenize_text(text):
+        return word_tokenize(text)
+
+    tokenized_texts = [tokenize_text(text) for text in cleaned_texts]
+
+    # Remove stop words
+    def remove_stopwords(tokens):
+        stop_words = set(stopwords.words('english'))
+        return [word for word in tokens if word not in stop_words]
+
+    preprocessed_texts = [remove_stopwords(tokens) for tokens in tokenized_texts]
+    """
+    # remove the headers, footers, and quotes from the documents.
+    dataset = fetch_20newsgroups(subset='all', shuffle=False, remove=('headers', 'footers', 'quotes'))
+    print(dataset.data[0])
+    
+    corpus = dataset.data # save as the raw docs
+    gnd_labels = dataset.target # labels for clustering evaluation or supervised tasks
+    print(len(corpus), len(gnd_labels))
+    print(type(corpus), type(gnd_labels))
+    print(gnd_labels)
+    print(dataset.target_names)
+    
+    # perform more Pre-processing steps
+    from collections import defaultdict
+    from nltk.tokenize import RegexpTokenizer
+    from stop_words import get_stop_words
+    from nltk.stem.porter import PorterStemmer
+    from gensim import corpora
+    from gensim.parsing.preprocessing import remove_stopwords, preprocess_string
+    from pprint import pprint
+
+    def pre_processing(docs):
+        tokenizer = RegexpTokenizer(r"\w+(?:[-'+]\w+)*|\w+")
+        en_stop = get_stop_words('en')
+        for doc in docs:
+            raw_text = doc.lower()
+            # tokenization
+            tokens_text = tokenizer.tokenize(raw_text)
+            # remove stopwords
+            stopped_tokens_text = [i for i in tokens_text if not i in en_stop]
+            # remoce digis and one-charcter word
+            doc = [token for token in stopped_tokens_text if not token.isnumeric()]
+            doc = [token for token in stopped_tokens_text if len(token) > 1]
+            # you could always add some new preprocessing here
+            yield doc
+    # Preprocess all the documents in the corpus
+    Vocab_v1 = list(pre_processing(corpus))
+    # verify length of the clean corpus and print a sample clean tokenized document
+    print(len(Vocab_v1))
+    print(Vocab_v1[0])
+        
+    
+    # Vectorization using TF-IDF
+    tfidf_vectorizer = TfidfVectorizer(max_features=2000)  # You can adjust the number of features as needed
+    X = tfidf_vectorizer.fit_transform([' '.join(tokens) for tokens in Vocab_v1])
+
+    data = MinMaxScaler().fit_transform(X.toarray())
+    # Label Encoding
+    labels = LabelEncoder().fit_transform(gnd_labels)
+
+
+    #############################   
+    #valid_indices = np.where(labels < 5)[0]
+    #data = data[valid_indices] 
+    #labels = labels[valid_indices]
+    #############################  
+    return data, labels
+
+"""
+def get_20_newsgroups_np():
+    newsgroups = fetch_20newsgroups(subset='all', remove=('headers', 'footers', 'quotes'))
+
+    # Preprocessing: TF-IDF Vectorization
+    vectorizer = TfidfVectorizer(max_df=0.5, max_features=2000, stop_words='english')
+    X = vectorizer.fit_transform(newsgroups.data)
+
+    data = MinMaxScaler().fit_transform(X.toarray())
+    labels = LabelEncoder().fit_transform(newsgroups.target)
+    
+    return data, labels 
+"""
+
 
 def get_pendigits_np():
     data = np.vstack([
@@ -254,12 +437,28 @@ def get_pendigits_np():
     pendigits = pendigits.astype("float")
     scaler = MinMaxScaler()
     pendigits = scaler.fit_transform(pendigits)
-
+    #pendigits = normalize_data(pendigits)
     # Fix labels
     labels = np.squeeze(labels)
     labels = labels.astype("int")
 
     return pendigits, labels
+
+def get_hars_np():
+    df_train = pd.read_csv(folder_path + 'HARS/train.csv', index_col=0)
+    df_test = pd.read_csv(folder_path + 'HARS/test.csv', index_col=0)
+    df = pd.concat([df_train, df_test], axis=0, ignore_index=True)
+    del df_train, df_test
+    
+    labels = df['Activity']
+    df.drop(columns=['subject','Activity'], inplace=True)
+    data = np.array(df)
+    labels = np.squeeze(np.array(labels))
+
+    data = MinMaxScaler().fit_transform(data)
+    labels = LabelEncoder().fit_transform(labels)
+
+    return data, labels    
     
 def get_10x73k_np():
     # Original Labels are within 0 to 9. But proper label mapping is required as there are 8 classes.
@@ -287,8 +486,8 @@ def get_10x73k_np():
     #data = np.reshape(data, (-1, 1, data.shape[1]))
 
     return data, labels
-
-def get_fashion_mnist_np():
+"""
+def get_fashionmnist_np():
 
     transform = transforms.Compose([transforms.Resize(IMG_SIZE), transforms.ToTensor()])
     train = datasets.FashionMNIST(folder_path + "FashionMNIST", train=True, download=True, transform=transform)
@@ -303,6 +502,52 @@ def get_fashion_mnist_np():
         example_data = example_data.view(1, IMG_SIZE, IMG_SIZE)
         data.append(np.array(example_data))
         labels.append(example_targets)
+    np.save(folder_path + "FashionMNIST/FashionMNIST_subset/FashionMNIST.npy", data)
+    np.save(folder_path + "FashionMNIST/FashionMNIST_subset/FashionMNIST_labels.npy", labels)
+
+    return data, labels
+"""
+
+def get_fashionmnist_np():
+    
+    # Tshirt/Top, Dress
+    # Trouser
+    # Pullover, Coat, Shirt
+    # Bag
+    # Sandal, Sneaker, Ankle Boot
+
+    # Define the category mapping
+    category_mapping = {
+        0: 0,  
+        1: 1,  
+        2: 2,  
+        3: 0,  
+        4: 2,  
+        5: 3,
+        6: 2,
+        7: 3,
+        8: 4,
+        9: 3
+    }
+
+
+    transform = transforms.Compose([transforms.Resize(IMG_SIZE), transforms.ToTensor()])
+    train = datasets.FashionMNIST(folder_path + "FashionMNIST", train=True, download=True, transform=transform)
+    trainset = torch.utils.data.DataLoader(train, batch_size=1, shuffle=SHUFFLE)
+    data = []
+    labels = []
+
+    for datapoint in enumerate(trainset):
+        batch_idx, (example_data, example_targets) = datapoint
+        example_targets = example_targets.item()
+
+        example_data = example_data.view(1, IMG_SIZE, IMG_SIZE)
+        data.append(np.array(example_data))
+        
+        # Map the original category to the merged category
+        mapped_category = category_mapping[example_targets]
+        labels.append(mapped_category)
+
     np.save(folder_path + "FashionMNIST/FashionMNIST_subset/FashionMNIST.npy", data)
     np.save(folder_path + "FashionMNIST/FashionMNIST_subset/FashionMNIST_labels.npy", labels)
 
@@ -412,7 +657,7 @@ def get_emnist_general_np(option):
 
 def get_emnist_balanced_letters_np():
     data, labels = get_emnist_general_np('letters')
-    valid_indices = np.where((labels >= 10) & (labels < 20))[0]
+    valid_indices = np.where((labels >=20 ) & (labels < 30))[0]
     
     data = data[valid_indices] 
     labels = labels[valid_indices]
@@ -430,6 +675,57 @@ def get_emnist_balanced_digits_np():
 
 def get_emnist_mnist_np():
     return get_emnist_general_np('mnist')
+
+def get_usps_np():
+    # Load the USPS dataset using Scikit-Learn
+    usps = fetch_openml(name="usps", version=2)
+    
+    # Extract the data and labels as NumPy arrays
+    usps_data = usps.data.astype(float).to_numpy()
+    usps_labels = usps.target.astype(int).to_numpy()
+    
+    # Initialize an empty array for resized images (28x28) with padding filled with -1
+    usps_data_padded = np.full((len(usps_data), 28, 28), -1.0)
+    
+    # Calculate padding size (6 pixels on each side)
+    padding = (28 - 16) // 2
+    
+    # Loop through each image and add padding with -1 values to make it 28x28
+    for i in range(len(usps_data)):
+        # Reshape the image to 16x16 pixels
+        image = usps_data[i].reshape(16, 16).astype('float32')
+        
+        # Create a 28x28 canvas filled with -1 values
+        padded_image = np.full((28, 28), -1.0)
+        
+        # Paste the original image into the center of the canvas
+        padded_image[padding:padding+16, padding:padding+16] = image # Scale pixel values to 0-1
+        
+        # Store the padded image in the new array
+        usps_data_padded[i] = padded_image
+        
+        data = np.reshape(usps_data_padded, (-1, 1, 28, 28))
+        print(data[0].shape)
+        labels = LabelEncoder().fit_transform(usps_labels)
+        
+    return data, labels
+
+def get_kmnist_np():
+    
+    # Load the data
+    data = np.load(folder_path + 'KMNIST/kmnist-train-imgs.npz')['arr_0']
+    labels = np.load(folder_path + 'KMNIST/kmnist-train-labels.npz')['arr_0']
+    #data = data.astype('float32')
+    #data /= 255.0
+    data = data.reshape(-1, data.shape[-1])
+    
+    data = MinMaxScaler().fit_transform(data).astype(np.float32)
+
+    data = np.reshape(data, (-1, 1, IMG_SIZE, IMG_SIZE))
+    labels = np.array(labels)
+    labels = LabelEncoder().fit_transform(labels)
+    
+    return data, labels
 
 def normalize_data(X):
     # Calculate the L2 norm of X

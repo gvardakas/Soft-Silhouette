@@ -60,12 +60,13 @@ class batch_KMeans(object):
 
 class GenericDCNAutoencoder(nn.Module):
 
-    def __init__(self, device, n_clusters, input_dim, latent_dim):
+    def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope):
         super(GenericDCNAutoencoder, self).__init__()
         self.device = device
         self.n_clusters = n_clusters
         self.input_dim = input_dim
         self.latent_dim = latent_dim
+        self.negative_slope = negative_slope
         self.IMG_SIZE = 28
 
         self.kmeans = batch_KMeans(self.latent_dim, self.n_clusters)
@@ -106,10 +107,9 @@ class GenericDCNAutoencoder(nn.Module):
         data_list, latent_data_list, labels_list = list(), list(), list()
 
         for batch_index, (data, labels) in enumerate(self.dataloader):
+            data = data.to(self.device)
             if(self.needsReshape):
-                data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE)).to(self.device)
-            else:    
-                data = torch.reshape(data, (data.shape[0], (self.IMG_SIZE * self.IMG_SIZE))).to(self.device)
+                data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE))
 
             data_list.append(data.cpu().detach().numpy())        
 
@@ -140,10 +140,9 @@ class GenericDCNAutoencoder(nn.Module):
         for epoch in range(self.n_pret_epochs):
             sum_rec_loss = 0
             for batch_index, (data, labels) in enumerate(self.dataloader):                             
+                data = data.to(self.device)
                 if(self.needsReshape):
-                    data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE)).to(self.device)
-                else:    
-                    data = torch.reshape(data, (data.shape[0], (self.IMG_SIZE * self.IMG_SIZE))).to(self.device)
+                    data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE))
 
                 reconstructions = self.forward(data)
                 rec_loss = MSE(reconstructions, data)
@@ -159,10 +158,10 @@ class GenericDCNAutoencoder(nn.Module):
         # Initialize clusters in self.kmeans after pre-training
         batch_X = []
         for batch_idx, (data, _) in enumerate(self.dataloader):
+            data = data.to(self.device)
             if(self.needsReshape):
-                data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE)).to(self.device)
-            else:    
-                data = torch.reshape(data, (data.shape[0], (self.IMG_SIZE * self.IMG_SIZE))).to(self.device)            
+                data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE))
+
             latent_X = self.encoder(data)
             batch_X.append(latent_X.detach().cpu().numpy())
         batch_X = np.vstack(batch_X)
@@ -209,11 +208,9 @@ class GenericDCNAutoencoder(nn.Module):
             self.latent_data_list = list()
             
             for batch_index, (data, labels) in enumerate(self.dataloader):
-                
+                data = data.to(self.device)
                 if(self.needsReshape):
-                    data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE)).to(self.device)
-                else:    
-                    data = torch.reshape(data, (data.shape[0], (self.IMG_SIZE * self.IMG_SIZE))).to(self.device)
+                    data = torch.reshape(data, (data.shape[0], 1, self.IMG_SIZE, self.IMG_SIZE))
 
                 # Get the latent features
                 with torch.no_grad():
@@ -269,48 +266,50 @@ class GenericDCNAutoencoder(nn.Module):
         self.data_dir_path = self.path_to_module + 'Results/' + self.dataset_name + '/DCNAE/' + self.properties_name
 
 class DCNAutoencoder(GenericDCNAutoencoder):
-    def __init__(self,  device, n_clusters, input_dim, latent_dim):
-        super(DCNAutoencoder, self).__init__( device, n_clusters, input_dim, latent_dim)
+    def __init__(self,  device, n_clusters, input_dim, latent_dim, negative_slope):
+        super(DCNAutoencoder, self).__init__( device, n_clusters, input_dim, latent_dim, negative_slope)
         self.needsReshape = False
                 
         self.encoder_model = nn.Sequential(
-            nn.Linear(self.input_dim, 500),
-            nn.ReLU(),
-
-            nn.Linear(500, 500),
-            nn.ReLU(),
+            nn.Linear(self.input_dim, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
             nn.BatchNorm1d(500),
 
-            nn.Linear(500, 2000),
-            nn.ReLU(),
+            nn.Linear(500, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.BatchNorm1d(500),
+
+            nn.Linear(500, 2000, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
             nn.BatchNorm1d(2000),
 
-            nn.Linear(2000, self.latent_dim),
-            nn.ReLU(),
-            nn.BatchNorm1d(self.latent_dim),
+            nn.Linear(2000, self.latent_dim, bias = True),
+            #nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+            nn.Tanh(),
+            nn.BatchNorm1d(self.latent_dim)
         )
     
         # Decoder Model - ([Latent Space, Linear], [2000, LeakyReLU], [500, LeakyReLU], [500, LeakyReLU], [Input Space, Linear])
         self.decoder_model = nn.Sequential(
-          
-            nn.Linear(self.latent_dim, 2000),
-            nn.ReLU(),
+            nn.Linear(self.latent_dim, 2000, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
             nn.BatchNorm1d(2000),
 
-            nn.Linear(2000, 500),
-            nn.ReLU(),
+            nn.Linear(2000, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
             nn.BatchNorm1d(500),
-    
-            nn.Linear(500, 500),
-            nn.ReLU(),
+
+            nn.Linear(500, 500, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
             nn.BatchNorm1d(500),
-    
-            nn.Linear(500, self.input_dim)
-        ) 
+
+            nn.Linear(500, self.input_dim, bias = True),
+            nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+        )
 
 class DCNCDAutoencoder(GenericDCNAutoencoder):           
-    def __init__(self, device, n_clusters, input_dim, latent_dim, n_channels):
-        super(DCNCDAutoencoder, self).__init__(device, n_clusters, input_dim, latent_dim)
+    def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope, n_channels):
+        super(DCNCDAutoencoder, self).__init__(device, n_clusters, input_dim, latent_dim, negative_slope)
         self.needsReshape = True
         self.n_channels = n_channels
         self.negative_slope = 0
@@ -351,6 +350,5 @@ class DCNCDAutoencoder(GenericDCNAutoencoder):
             nn.BatchNorm2d(32),
             
             nn.ConvTranspose2d(32, self.n_channels, kernel_size = 5, stride = 2, padding = 2, output_padding = 1),            
-            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
-            #nn.BatchNorm2d(self.n_channels)
+            nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True)
         )             
