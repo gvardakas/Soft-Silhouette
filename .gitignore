@@ -1,6 +1,6 @@
 *.png
 *.pyc
-.ipynb_checkpoints
+.ipynb_checkpoints/
 Old-Version/Thesis/
 Old-Version/Hard-Silhouette-2D-example.ipynb
 Old-Version/datasets/MNIST
