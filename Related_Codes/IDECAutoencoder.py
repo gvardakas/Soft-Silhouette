@@ -242,13 +242,12 @@ class IDECAutoencoder(GenericIDECAutoencoder):
         )
 
 class IDECCDAutoencoder(GenericIDECAutoencoder):           
-    def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope, n_channels):
+    def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope):
         super(IDECCDAutoencoder, self).__init__(device, n_clusters, input_dim, latent_dim, negative_slope)
         self.needsReshape = True
-        self.n_channels = n_channels
 
         self.encoder_model = nn.Sequential(
-            nn.Conv2d(self.n_channels, 32, kernel_size = 5, stride = 2, padding = 2),
+            nn.Conv2d(self.input_dim, 32, kernel_size = 5, stride = 2, padding = 2),
             nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(32),
     
@@ -280,7 +279,7 @@ class IDECCDAutoencoder(GenericIDECAutoencoder):
             nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(32),
             
-            nn.ConvTranspose2d(32, self.n_channels, kernel_size = 5, stride = 2, padding = 2, output_padding = 1),            
+            nn.ConvTranspose2d(32, self.input_dim, kernel_size = 5, stride = 2, padding = 2, output_padding = 1),            
             nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True)
         )             
 
