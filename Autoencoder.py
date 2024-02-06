@@ -256,6 +256,7 @@ class Autoencoder(GenericAutoencoder):
             nn.BatchNorm1d(self.latent_dim)
         )
 
+<<<<<<< Updated upstream
         # Clustering MLP - MLP Part from latent Dimension to Number of Clusters
         self.cluster_model = nn.Sequential(
             
@@ -283,6 +284,34 @@ class Autoencoder(GenericAutoencoder):
             nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True)
         )
         
+=======
+		# Clustering MLP - MLP Part from latent Dimension to Number of Clusters
+		self.cluster_model = nn.Sequential(
+			
+			# Output Layer
+			nn.Linear(self.latent_dim, self.n_clusters, bias=False), # TODO Look This
+		)
+	
+		# Decoder Model - ([Latent Space, Linear], [2000, LeakyReLU], [500, LeakyReLU], [500, LeakyReLU], [Input Space, Linear])
+		self.decoder_model = nn.Sequential(
+			nn.Linear(self.latent_dim, 2000, bias = True),
+			nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+			nn.BatchNorm1d(2000),
+	
+			nn.Linear(2000, 500, bias = True),
+			nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+			nn.BatchNorm1d(500),
+	
+			nn.Linear(500, 500, bias = True),
+			nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
+			nn.BatchNorm1d(500),
+	
+			nn.Linear(500, self.input_dim, bias = True),
+			nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True)
+			#nn.BatchNorm1d(self.input_dim) APAGOREYETAI
+		)
+		
+>>>>>>> Stashed changes
 class CD_Autoencoder(GenericAutoencoder):
 
     def __init__(self, device, n_clusters, input_dim, latent_dim, negative_slope, n_channels):
@@ -304,6 +333,7 @@ class CD_Autoencoder(GenericAutoencoder):
             nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
             nn.BatchNorm2d(128),
 
+<<<<<<< Updated upstream
             nn.Flatten(start_dim=1),
             nn.Linear(128 * 3 * 3, self.latent_dim, bias=True), # latent_dim * 3 * 3
             nn.Tanh(),
@@ -316,6 +346,27 @@ class CD_Autoencoder(GenericAutoencoder):
             # Output Layer
             # nn.Linear(self.latent_dim, self.n_clusters, bias=True),
             rbf.RBF(self.latent_dim, self.n_clusters, rbf.gaussian),
+=======
+			nn.Flatten(start_dim=1),
+			nn.Linear(128 * 3 * 3, self.latent_dim, bias=True), # latent_dim * 3 * 3
+			nn.Tanh(),
+			nn.BatchNorm1d(self.latent_dim), #TODO
+		)
+		
+		# Clustering MLP - MLP Part from latent Dimension to Number of Clusters
+		self.cluster_model = nn.Sequential(
+	
+			# Output Layer
+			nn.Linear(self.latent_dim, self.n_clusters, bias=False), # TODO Look This
+		)
+		
+		# Decoder 
+		self.decoder_model = nn.Sequential(
+			nn.Linear(self.latent_dim, 128 * 3 * 3, bias=True),
+			nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True),
+			nn.BatchNorm1d(128 * 3 * 3),
+			nn.Unflatten(dim = 1, unflattened_size = (128, 3, 3)),
+>>>>>>> Stashed changes
 
         )
         
