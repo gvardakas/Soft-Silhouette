@@ -117,11 +117,11 @@ def update_inner_hashmap(keys, new_value, file_path):
     with open(file_name, 'wb') as file:
         pickle.dump(hashmap, file)    
 
-def function_get_dataset(dataset_name, dataset_properties):
-    module = importlib.import_module(dataset_properties['module_name'])
+def function_get_dataset(dataset_name, module_name, batch_size, n_clusters):
+    module = importlib.import_module(module_name)
     function = getattr(module, "get_dataset")
     
-    return function(dataset_name=dataset_name, batch_size=dataset_properties['batch_size'])
+    return function(dataset_name, batch_size)
         
         
         

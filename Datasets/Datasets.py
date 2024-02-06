@@ -9,10 +9,9 @@ import pandas as pd
 import scipy.sparse
 import scipy.io
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-from sklearn.datasets import make_circles, make_moons, make_blobs
-from mnist import MNIST
+from sklearn.datasets import make_circles, make_moons, make_blobs, fetch_openml
 import matplotlib.pyplot as plt
-
+from mnist import MNIST
 SHUFFLE = True 
 IMG_SIZE = 28
 
@@ -219,30 +218,6 @@ def get_tcga_np():
 
     return data, labels
 
-def get_newsgroups_np():
-    #pdb.set_trace()
-    vectorizer = TfidfVectorizer()
-    newsgroups_train = fetch_20newsgroups(subset='train', remove=('headers', 'footers', 'quotes'))
-    data = vectorizer.fit_transform(newsgroups_train.data)
-    labels = newsgroups_train.target
-
-    # Random Shuffle
-    total_size = data.shape[0]
-    data = data.todense()
-    random_permutation = np.random.permutation(np.arange(total_size))
-    data = data[random_permutation]
-    labels = labels[random_permutation]
-
-    # Select datapoints
-    if (data_points > 0):
-        data = data[:data_points]
-        labels = labels[:data_points]
-
-    for i in data[0]:
-        print(i)
-    
-    return data, labels
-
 def get_pendigits_np():
     data = np.vstack([
         np.loadtxt(folder_path + "Pendigits/pendigits.tra", delimiter=','),
@@ -254,12 +229,28 @@ def get_pendigits_np():
     pendigits = pendigits.astype("float")
     scaler = MinMaxScaler()
     pendigits = scaler.fit_transform(pendigits)
-
+    #pendigits = normalize_data(pendigits)
     # Fix labels
     labels = np.squeeze(labels)
     labels = labels.astype("int")
 
     return pendigits, labels
+
+def get_har_np():
+    df_train = pd.read_csv(folder_path + 'HARS/train.csv', index_col=0)
+    df_test = pd.read_csv(folder_path + 'HARS/test.csv', index_col=0)
+    df = pd.concat([df_train, df_test], axis=0, ignore_index=True)
+    del df_train, df_test
+    
+    labels = df['Activity']
+    df.drop(columns=['subject','Activity'], inplace=True)
+    data = np.array(df)
+    labels = np.squeeze(np.array(labels))
+
+    data = MinMaxScaler().fit_transform(data)
+    labels = LabelEncoder().fit_transform(labels)
+
+    return data, labels    
     
 def get_10x73k_np():
     # Original Labels are within 0 to 9. But proper label mapping is required as there are 8 classes.
@@ -285,26 +276,6 @@ def get_10x73k_np():
 
     # TODO for conv
     #data = np.reshape(data, (-1, 1, data.shape[1]))
-
-    return data, labels
-
-def get_fashion_mnist_np():
-
-    transform = transforms.Compose([transforms.Resize(IMG_SIZE), transforms.ToTensor()])
-    train = datasets.FashionMNIST(folder_path + "FashionMNIST", train=True, download=True, transform=transform)
-    trainset = torch.utils.data.DataLoader(train, batch_size=1, shuffle=SHUFFLE)
-    data = []
-    labels = []
-
-    for datapoint in enumerate(trainset):
-        batch_idx, (example_data, example_targets) = datapoint
-        example_targets = example_targets.item()
-
-        example_data = example_data.view(1, IMG_SIZE, IMG_SIZE)
-        data.append(np.array(example_data))
-        labels.append(example_targets)
-    np.save(folder_path + "FashionMNIST/FashionMNIST_subset/FashionMNIST.npy", data)
-    np.save(folder_path + "FashionMNIST/FashionMNIST_subset/FashionMNIST_labels.npy", labels)
 
     return data, labels
 
@@ -352,7 +323,7 @@ def get_r3_np():
     # data = normalize_data(data)
     return data, labels
 
-def get_r100_np():
+def get_synthetic_np():
     np.random.seed(42)
  
     # Elements for high projections (DCN) 
@@ -410,9 +381,27 @@ def get_emnist_general_np(option):
     
     return data, labels
 
-def get_emnist_balanced_letters_np():
+def get_emnist_balanced_letters_A_J_np():
     data, labels = get_emnist_general_np('letters')
-    valid_indices = np.where((labels >= 10) & (labels < 20))[0]
+    valid_indices = np.where((labels >=10 ) & (labels < 20))[0]
+    
+    data = data[valid_indices] 
+    labels = labels[valid_indices]
+    
+    return data, labels
+
+def get_emnist_balanced_letters_K_T_np():
+    data, labels = get_emnist_general_np('letters')
+    valid_indices = np.where((labels >=20 ) & (labels < 30))[0]
+    
+    data = data[valid_indices] 
+    labels = labels[valid_indices]
+    
+    return data, labels
+
+def get_emnist_balanced_letters_U_Z_np():
+    data, labels = get_emnist_general_np('letters')
+    valid_indices = np.where((labels >=30 ) & (labels < 36))[0]
     
     data = data[valid_indices] 
     labels = labels[valid_indices]
@@ -431,6 +420,68 @@ def get_emnist_balanced_digits_np():
 def get_emnist_mnist_np():
     return get_emnist_general_np('mnist')
 
+def get_usps_np():
+    # Load the USPS dataset using Scikit-Learn
+    usps = fetch_openml(name="usps", version=2)
+    
+    # Extract the data and labels as NumPy arrays
+    usps_data = usps.data.astype(float).to_numpy()
+    usps_labels = usps.target.astype(int).to_numpy()
+    
+    # Initialize an empty array for resized images (28x28) with padding filled with -1
+    usps_data_padded = np.full((len(usps_data), 28, 28), -1.0)
+    
+    # Calculate padding size (6 pixels on each side)
+    padding = (28 - 16) // 2
+    
+    # Loop through each image and add padding with -1 values to make it 28x28
+    for i in range(len(usps_data)):
+        # Reshape the image to 16x16 pixels
+        image = usps_data[i].reshape(16, 16).astype('float32')
+        
+        # Create a 28x28 canvas filled with -1 values
+        padded_image = np.full((28, 28), -1.0)
+        
+        # Paste the original image into the center of the canvas
+        padded_image[padding:padding+16, padding:padding+16] = image # Scale pixel values to 0-1
+        
+        # Store the padded image in the new array
+        usps_data_padded[i] = padded_image
+        
+        data = np.reshape(usps_data_padded, (-1, 1, 28, 28))
+        print(data[0].shape)
+        labels = LabelEncoder().fit_transform(usps_labels)
+        
+    return data, labels
+
+def get_kmnist_np():
+    
+    # Load the data
+    data = np.load(folder_path + 'KMNIST/kmnist-train-imgs.npz')['arr_0']
+    labels = np.load(folder_path + 'KMNIST/kmnist-train-labels.npz')['arr_0']
+    #data = data.astype('float32')
+    #data /= 255.0
+    data = data.reshape(-1, data.shape[-1])
+    
+    data = MinMaxScaler().fit_transform(data).astype(np.float32)
+
+    data = np.reshape(data, (-1, 1, IMG_SIZE, IMG_SIZE))
+    labels = np.array(labels)
+    labels = LabelEncoder().fit_transform(labels)
+    
+    return data, labels
+
+def get_waveform_v1_np():
+    df_data = pd.read_csv(folder_path + 'waveform-v1/data.csv', header = None)
+    df_labels = pd.read_csv(folder_path + 'waveform-v1/labels.csv', header = None)
+ 
+    data = np.array(df_data)
+    labels = df_labels.to_numpy()
+    data = MinMaxScaler().fit_transform(data)
+    labels = LabelEncoder().fit_transform(labels)
+ 
+    return data, labels
+
 def normalize_data(X):
     # Calculate the L2 norm of X
     norm_X = np.linalg.norm(X, axis=1, keepdims=True)
@@ -445,7 +496,6 @@ def get_dataset(dataset_name, batch_size=64):
     function_name = "get_" + dataset_name + "_np"
     function_to_call = globals()[function_name]
     
-
     data_np, labels_np = function_to_call()
     
     # Convert to tensor dataset

@@ -1,7 +1,7 @@
 import torchvision
 import torchvision.transforms as transforms
 from torchvision import datasets
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 SHUFFLE = True 
 
@@ -27,10 +27,14 @@ def get_dataset(dataset_name, batch_size=64):
         [
          transforms.Resize((IMG_SIZE, IMG_SIZE)),
          transforms.Grayscale(num_output_channels=1),
-         transforms.ToTensor(),
-         transforms.Normalize(mean=(0.5), std=(0.5))])
+         transforms.ToTensor()])
 
     dataset = function_to_call(transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=SHUFFLE)
+    
+    # You can choose a subset of the dataset if needed
+    subset_size = 10000  # Change this to the number of samples you want
+    train_subset = Subset(dataset, range(subset_size))
+    
+    dataloader = DataLoader(train_subset, batch_size=batch_size, shuffle=SHUFFLE)
 
     return dataloader, 1, [], []
