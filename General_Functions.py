@@ -4,7 +4,6 @@ import pandas as pd
 from openpyxl import load_workbook,Workbook
 import os
 
-# TODO Giannis
 class General_Functions:
 
     def __init__(self):
