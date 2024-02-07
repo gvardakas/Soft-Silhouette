@@ -1,6 +1,6 @@
 *.png
 *.pyc
 .ipynb_checkpoints/
-Datasets
+Datasets/*/
 __pycache__
 Results
