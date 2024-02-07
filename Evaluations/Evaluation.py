@@ -1,9 +1,7 @@
 import numpy as np
-from sklearn.metrics import accuracy_score, silhouette_score
 from sklearn.metrics.cluster import normalized_mutual_info_score, adjusted_rand_score
 from scipy.optimize import linear_sum_assignment as linear_assignment
 from typing import Optional
-import pdb
 
 class Evaluator:
 
@@ -15,8 +13,7 @@ class Evaluator:
 		self.ari = adjusted_rand_score(labels_true, labels_pred)
 		self.acc = self.__compute_cluster_accuracy(labels_true, labels_pred)[0]
 		self.pur = self.__compute_purity(labels_true, labels_pred)
-		self.sil = 0 # silhouette_score(data, labels_pred)
-		return self.acc, self.pur, self.nmi, self.ari, self.sil
+		return self.acc, self.pur, self.nmi, self.ari
 
 	def get_cluster_accuracy(self):
 		return self.cluster_accuracy

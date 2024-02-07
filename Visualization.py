@@ -1,15 +1,7 @@
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.ticker import FixedLocator
-import matplotlib.colors as mcolors
-
 from sklearn.manifold import TSNE
-
-from openpyxl import load_workbook,Workbook
-import os.path
-
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from General_Functions import General_Functions
 
 class Visualization:

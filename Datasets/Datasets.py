@@ -1,16 +1,9 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, TensorDataset
-from torchvision import datasets
-import torchvision.transforms as transforms
 import numpy as np
 import pandas as pd
-import scipy.sparse
-import scipy.io
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-from sklearn.datasets import make_circles, make_moons, make_blobs, fetch_openml
-import matplotlib.pyplot as plt
+from sklearn.datasets import make_blobs
+import torch
+from torch.utils.data import DataLoader, TensorDataset
 from mnist import MNIST
 SHUFFLE = True 
 IMG_SIZE = 28

@@ -1,19 +1,14 @@
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
-
 import torch
 import torch.nn as nn
-from torch.nn.functional import softmax, normalize
 import torch.optim as optim
-
-import os
-
+from torch.nn.functional import softmax
+import RBF as rbf
 from Objectives import Objectives
-from Visualization import Visualization
 from Evaluations.Evaluation import Evaluator
 from General_Functions import General_Functions
-import torch_rbf as rbf
 
 class GenericAutoencoder(nn.Module):
 
