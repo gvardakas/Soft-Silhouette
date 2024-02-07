@@ -20,7 +20,6 @@ class Objectives:
 		# reversed_betas
 		betas = betas[:, torch.arange(betas.size(1)-1, -1, -1)]
 		
-		#sc = torch.div(torch.sub(betas, alphas), torch.max(alphas, betas)).to(self.device)
 		sc = torch.div(torch.sub(betas, alphas), torch.max(alphas, betas)).to(self.device)
 		s = torch.mean(torch.sum(torch.mul(soft_clustering, sc), dim=1)).to(self.device)
 		return s

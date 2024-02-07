@@ -23,10 +23,7 @@ class Visualization:
 
     def plot_collage(self, images, num_x_images, num_y_images, image_size, data_dir_path):
     
-        # Create a blank canvas for the collage
-        collage_size = (image_size[0] * num_x_images, image_size[1] * num_y_images)
-
-        fig, axes = plt.subplots(num_x_images, num_y_images, figsize=(image_size[0], image_size[1]), facecolor = 'black')
+        _, axes = plt.subplots(num_x_images, num_y_images, figsize=(image_size[0], image_size[1]), facecolor = 'black')
 
         for i in range(num_x_images):
             for j in range(num_y_images):
@@ -86,7 +83,7 @@ class Visualization:
             plt.scatter(x=x, y=y, c=[c] * selected_indexes.shape[0]) #, edgecolors='silver')
 
         # Plot cluster centers
-        #plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
+        plt.scatter(cluster_centers[:n_clusters, 0], cluster_centers[:n_clusters, 1], c='red', marker='x', s=500, linewidths=3, label='Cluster Centers')
 
         # Remove x-axis numbering and label
         plt.xticks([])  # Pass an empty list to remove ticks

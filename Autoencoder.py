@@ -79,7 +79,7 @@ class GenericAutoencoder(nn.Module):
         data_list, latent_data_list, labels_list = list(), list(), list()
 
         for batch_index, (data, labels) in enumerate(self.dataloader):
-            if self.needsReshape: #TODO
+            if self.needsReshape:
                 data = torch.reshape(data, (data.shape[0], self.input_dim, self.IMG_SIZE, self.IMG_SIZE))
             data_list.append(data.cpu().detach().numpy())        
 
@@ -94,8 +94,8 @@ class GenericAutoencoder(nn.Module):
     def get_similarity_data(self):
         data_list, similarity_list, labels_list = list(), list(), list()
 
-        for batch_index, (data, labels) in enumerate(self.dataloader):
-            if self.needsReshape: #TODO
+        for _, (data, labels) in enumerate(self.dataloader):
+            if self.needsReshape:
                 data = torch.reshape(data, (data.shape[0], self.input_dim, self.IMG_SIZE, self.IMG_SIZE))
                 
             similarity = self.forward_similarity(data).to(self.device)
@@ -141,10 +141,10 @@ class GenericAutoencoder(nn.Module):
 
         for epoch in range(self.n_pret_epochs):
             sum_rec_loss = 0
-            for batch_index, (data, labels) in enumerate(self.dataloader):
+            for _, (data, _) in enumerate(self.dataloader):
                 data = data.to(self.device)
 
-                if self.needsReshape: # TODO
+                if self.needsReshape:
                     data = torch.reshape(data, (data.shape[0], self.input_dim, self.IMG_SIZE, self.IMG_SIZE))
                 
                 reconstructions = self.forward(data)
@@ -177,10 +177,10 @@ class GenericAutoencoder(nn.Module):
             self.labels_list = list()
             self.latent_data_list = list()
             
-            for batch_index, (data, labels) in enumerate(self.dataloader):
+            for _, (data, labels) in enumerate(self.dataloader):
                 data = data.to(self.device)
     
-                if self.needsReshape: #TODO
+                if self.needsReshape:
                     data = torch.reshape(data, (data.shape[0], self.input_dim, self.IMG_SIZE, self.IMG_SIZE))
                 
                 reconstructions = self.forward(data)
@@ -247,18 +247,13 @@ class Autoencoder(GenericAutoencoder):
             nn.BatchNorm1d(2000),
 
             nn.Linear(2000, self.latent_dim, bias = True),
-            #nn.LeakyReLU(negative_slope = self.negative_slope, inplace=True),
             nn.Tanh(),
             nn.BatchNorm1d(self.latent_dim)
         )
 
         # Clustering MLP - MLP Part from latent Dimension to Number of Clusters
         self.cluster_model = nn.Sequential(
-            
-            # Output Layer
-            # nn.Linear(self.latent_dim, self.n_clusters, bias=True), # TODO Look This
             rbf.RBF(self.latent_dim, self.n_clusters, rbf.gaussian),
-
         )
     
         self.decoder_model = nn.Sequential(
@@ -300,18 +295,14 @@ class CD_Autoencoder(GenericAutoencoder):
             nn.BatchNorm2d(128),
 
             nn.Flatten(start_dim=1),
-            nn.Linear(128 * 3 * 3, self.latent_dim, bias=True), # latent_dim * 3 * 3
+            nn.Linear(128 * 3 * 3, self.latent_dim, bias=True),
             nn.Tanh(),
-            nn.BatchNorm1d(self.latent_dim), #TODO
+            nn.BatchNorm1d(self.latent_dim),
         )
         
         # Clustering MLP - MLP Part from latent Dimension to Number of Clusters
         self.cluster_model = nn.Sequential(
-    
-            # Output Layer
-            # nn.Linear(self.latent_dim, self.n_clusters, bias=True),
             rbf.RBF(self.latent_dim, self.n_clusters, rbf.gaussian),
-
         )
         
         # Decoder 
