@@ -4,7 +4,7 @@ Unsupervised learning has gained prominence in the big data era, offering a mean
 
 # Execution Instructions
 1) You should first install all requirements via running in your terminal the command pip install -r requirements.txt.
-2) You should open the DCSS_Demo.ipynb and run each cell of it via a suitable program e.g. Visual Code  
+2) You should open the DCSS_Demo.ipynb and run each cell of it via a suitable program e.g. Visual Code.  
 
 # References
 ```
