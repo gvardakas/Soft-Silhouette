@@ -215,9 +215,9 @@ class GenericAutoencoder(nn.Module):
             self.labels_list = np.concatenate(self.labels_list).astype(int)
             self.latent_data_list = np.concatenate(self.latent_data_list)
 
-            acc, pur, nmi, ari, sil = self.evaluator.evaluate_model(self.latent_data_list, self.labels_list, self.clusters_list)
+            acc, pur, nmi, ari = self.evaluator.evaluate_model(self.latent_data_list, self.labels_list, self.clusters_list)
             self.df_eval.loc[epoch] = [sum_rec_loss, sum_clustering_loss, sum_soft_silhouette, acc, pur, nmi, ari]
-            print(f'Ep: {epoch} Rec L: {sum_rec_loss:.4f} Cl L: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} SSil: {sum_soft_silhouette:.4f} SIL: {sil:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
+            print(f'Ep: {epoch} Rec L: {sum_rec_loss:.4f} Cl L: {sum_clustering_loss:.4f} Entropy: {sum_entropy:.4f} SSil: {sum_soft_silhouette:.4f} ACC: {acc:.2f} PUR: {pur:.2f} NMI: {nmi:.2f} ARI: {ari:.2f}')
 
         return self.latent_data_list, self.labels_list, self.clusters_list
 
