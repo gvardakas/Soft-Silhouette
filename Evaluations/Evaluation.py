@@ -83,20 +83,3 @@ class Evaluator:
 			correct += np.sum(cluster_labels == majority_label)
 		
 		return float(correct) / len(labels_pred)
-
-
-
-'''
-
-def main():
-	evaluator = Evaluator()
-	labels = np.array([0, 1, 2, 3])
-	clusters = np.array([0, 1, 2, 3])
-	
-	evaluator.evaluate_clustering(labels, clusters)
-	evaluator.print_evaluation()
-
-if __name__ == '__main__':
-	main()
-
-'''
