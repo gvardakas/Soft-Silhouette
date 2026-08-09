@@ -66,26 +66,6 @@ DCSS_Demo.ipynb
 
 and run the notebook cells sequentially.
 
-
-### Stop the Docker Container
-
-To stop the running container, press:
-
-```text
-Ctrl + C
-```
-
-in the terminal where the container is running.
-
-If you want to remove the stopped container before creating a new one, run:
-
-```bash
-docker rm soft-silhouette-container
-```
-
-The Docker image does not need to be rebuilt unless the Dockerfile or the software environment is modified.
-
-
 ## Option 2: Local Installation
 
 Alternatively, the project can be executed without Docker.
